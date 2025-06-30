@@ -29,10 +29,11 @@ const cli = meow(
   `,
   {
     importMeta: import.meta,
+    version: false,
     flags: {
-      version: {
+      dev: {
         type: 'boolean',
-        shortFlag: 'v',
+        shortFlag: 'd',
       },
       message: {
         type: 'string',
@@ -48,8 +49,8 @@ const cli = meow(
 
 const { input, flags } = cli;
 
-// Handle version flag
-if (flags.version) {
+// Handle version flag (check both --version and --ver)
+if (flags.dev || process.argv.includes('--dev')) {
   const versionInfo = getFullVersionInfo();
   console.log(getVersion());
   

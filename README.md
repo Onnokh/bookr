@@ -44,6 +44,9 @@ bookr --date "2024-01-15" 4h
 
 # Get help
 bookr --help
+
+# version
+bookr --version
 ```
 
 ## 📁 Project Structure

@@ -17,6 +17,9 @@
     "postbuild": "chmod +x dist/cli.js",
     "start": "node dist/cli.js",
     "test": "echo \"Error: no test specified\" && exit 1",
+    "test-jira": "tsx src/test-jira-connection.ts",
+    "test-worklog": "tsx src/test-worklog.ts",
+    "list-issues": "tsx src/list-jira-issues.ts",
     "lint": "biome lint .",
     "format": "biome format . --write",
     "check": "biome check .",
@@ -48,12 +51,14 @@
   "homepage": "https://github.com/yourusername/bookr#readme",
   "dependencies": {
     "better-fetch": "^1.0.0",
+    "dotenv": "^17.0.0",
     "ink": "^4.4.1",
     "meow": "^13.1.1",
     "react": "^18.2.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.5.3",
+    "@types/dotenv": "^8.2.3",
     "@types/node": "^20.10.5",
     "@types/react": "^18.2.45",
     "tsx": "^4.7.0",

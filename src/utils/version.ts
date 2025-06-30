@@ -25,35 +25,36 @@ function getPackageVersion(): string {
 
 function getGitCommitHash(): string | null {
   try {
+    const cwd = join(__dirname, '..', '..');
     const commitHash = execSync('git rev-parse --short HEAD', { 
       encoding: 'utf-8',
-      cwd: join(__dirname, '..', '..')
+      cwd
     }).trim();
     return commitHash;
   } catch (error) {
-    // Git not available or not a git repository
     return null;
   }
 }
 
 function getGitBranch(): string | null {
   try {
+    const cwd = join(__dirname, '..', '..');
     const branch = execSync('git branch --show-current', { 
       encoding: 'utf-8',
-      cwd: join(__dirname, '..', '..')
+      cwd
     }).trim();
     return branch;
   } catch (error) {
-    // Git not available or not a git repository
     return null;
   }
 }
 
 function isDirty(): boolean {
   try {
+    const cwd = join(__dirname, '..', '..');
     const status = execSync('git status --porcelain', { 
       encoding: 'utf-8',
-      cwd: join(__dirname, '..', '..')
+      cwd
     }).trim();
     return status.length > 0;
   } catch (error) {
