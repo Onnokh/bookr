@@ -1,0 +1,68 @@
+{
+  "name": "bookr",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "A terminal-based CLI tool to book time in Jira using the Tempo plugin by parsing your current Git branch name",
+  "main": "dist/cli.js",
+  "bin": {
+    "bookr": "dist/cli.js"
+  },
+  "files": [
+    "dist/**/*",
+    "README.md"
+  ],
+  "scripts": {
+    "dev": "tsx watch src/cli.ts",
+    "build": "tsc",
+    "postbuild": "chmod +x dist/cli.js",
+    "start": "node dist/cli.js",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "biome lint .",
+    "format": "biome format . --write",
+    "check": "biome check .",
+    "clean": "rm -rf dist",
+    "prebuild": "npm run clean",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "cli",
+    "tempo",
+    "jira",
+    "time-tracking",
+    "git",
+    "ink",
+    "typescript",
+    "productivity",
+    "worklog",
+    "timesheet"
+  ],
+  "author": "",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/bookr.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/bookr/issues"
+  },
+  "homepage": "https://github.com/yourusername/bookr#readme",
+  "dependencies": {
+    "better-fetch": "^1.0.0",
+    "ink": "^4.4.1",
+    "meow": "^13.1.1",
+    "react": "^18.2.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.5.3",
+    "@types/node": "^20.10.5",
+    "@types/react": "^18.2.45",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
