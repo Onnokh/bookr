@@ -28,6 +28,12 @@ jobs:
       - name: Build package
         run: npm run build
 
+      - name: List built files
+        run: |
+          echo "Checking dist directory contents:"
+          ls -la dist/ || echo "dist directory not found"
+          find . -name "*.js" -path "./dist/*" || echo "No JS files found in dist"
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
@@ -50,5 +56,4 @@ jobs:
             bookr
             ```
           draft: false
-          prerelease: false
-          files: dist/**/* 
+          prerelease: false 
