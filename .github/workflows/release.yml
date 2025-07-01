@@ -1,12 +1,15 @@
-name: Release to NPM
+name: Release and Publish
 
 on:
-  release:
-    types: [published]
+  push:
+    tags:
+      - 'v*'
 
 jobs:
-  publish:
+  release-and-publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -26,7 +29,37 @@ jobs:
       - name: Build package
         run: npm run build
 
+      - name: List built files
+        run: |
+          echo "Checking dist directory contents:"
+          ls -la dist/ || echo "dist directory not found"
+          find . -name "*.js" -path "./dist/*" || echo "No JS files found in dist"
+
       - name: Publish to NPM
         run: npm publish
         env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }} 
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body: |
+            ## What's Changed
+            
+            This release includes the latest updates and improvements.
+            
+            ### Installation
+            
+            ```bash
+            npm install -g bookr-cli
+            ```
+            
+            ### Usage
+            
+            ```bash
+            bookr
+            ```
+          draft: false
+          prerelease: false 
