@@ -51,14 +51,14 @@
   "homepage": "https://github.com/yourusername/bookr#readme",
   "dependencies": {
     "better-fetch": "^1.0.0",
-    "dotenv": "^17.0.0",
+    "env-paths": "^3.0.0",
     "ink": "^4.4.1",
+    "inquirer": "^12.6.3",
     "meow": "^13.1.1",
     "react": "^18.2.0"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.5.3",
-    "@types/dotenv": "^8.2.3",
     "@types/node": "^20.10.5",
     "@types/react": "^18.2.45",
     "tsx": "^4.7.0",

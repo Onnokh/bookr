@@ -16,13 +16,27 @@ export interface JiraIssue {
             key: string;
             name: string;
         };
+        assignee?: {
+            name: string;
+            displayName: string;
+        };
     };
 }
 export interface JiraWorklog {
     id?: string;
     timeSpent: string;
     timeSpentSeconds?: number;
-    comment?: string;
+    comment?: string | {
+        content: Array<{
+            content: Array<{
+                text: string;
+                type: string;
+            }>;
+            type: string;
+        }>;
+        type: string;
+        version: number;
+    };
     started?: string;
     author?: {
         name: string;
@@ -42,5 +56,13 @@ export interface JiraUser {
 export interface JiraError {
     errorMessages: string[];
     errors: Record<string, string>;
+}
+export interface JiraSprint {
+    id: number;
+    name: string;
+    state: string;
+    startDate?: string;
+    endDate?: string;
+    goal?: string;
 }
 //# sourceMappingURL=jira.d.ts.map

@@ -40,6 +40,46 @@ export declare class JiraClient {
      * Get recent issues assigned to current user
      */
     getMyRecentIssues(maxResults?: number): Promise<JiraIssue[]>;
+    /**
+     * Get today's worklogs for the current user
+     */
+    getTodayWorklogs(): Promise<Array<{
+        issue: JiraIssue;
+        worklog: JiraWorklog;
+    }>>;
+    /**
+     * Get current active sprint from the first board
+     */
+    getCurrentSprint(): Promise<{
+        id: number;
+        name: string;
+        startDate?: string;
+        endDate?: string;
+    }>;
+    /**
+     * Get all boards
+     */
+    getBoards(): Promise<Array<{
+        id: number;
+        name: string;
+    }>>;
+    /**
+     * Get all sprints for a board (active, future, closed)
+     */
+    getSprintsForBoard(boardId: number): Promise<Array<{
+        id: number;
+        name: string;
+        state: string;
+        startDate?: string;
+        endDate?: string;
+    }>>;
+    /**
+     * Search for worklogs by current user within a date range
+     */
+    searchWorklogsByDateRange(startDate: Date, endDate: Date): Promise<Array<{
+        issue: JiraIssue;
+        worklog: JiraWorklog;
+    }>>;
 }
 /**
  * Create a JIRA client from environment variables
