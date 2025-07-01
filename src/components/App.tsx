@@ -45,7 +45,9 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
       try {
         // Check if we're in a Git repository (only required if no ticket provided)
         if (!flags.ticket && !isGitRepository()) {
-          setError('Not in a Git repository and no ticket provided. Please either run from a Git repository or specify a ticket: bookr PROJ-123 2h30m');
+          setError(
+            'Not in a Git repository and no ticket provided. Please either run from a Git repository or specify a ticket: bookr PROJ-123 2h30m'
+          );
           setAppState('error');
           return;
         }
@@ -78,7 +80,7 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
 
         // Use provided ticket or extract from branch name
         let issueKey: string | null = null;
-        
+
         if (flags.ticket) {
           // Use explicitly provided ticket
           issueKey = flags.ticket;
