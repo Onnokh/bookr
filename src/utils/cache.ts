@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync, unlinkSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import envPaths from 'env-paths';
 
@@ -49,6 +49,19 @@ export function writeCache(data: CacheData): void {
     writeFileSync(cachePath, JSON.stringify(data, null, 2));
   } catch {
     // Silently fail cache writes
+  }
+}
+
+export const getCache = readCache;
+export const setCache = writeCache;
+export function clearCache() {
+  try {
+    const cachePath = getCachePath();
+    if (existsSync(cachePath)) {
+      unlinkSync(cachePath);
+    }
+  } catch {
+    // Silently fail
   }
 }
 

@@ -3,7 +3,7 @@ import type React from 'react';
 import { useEffect, useState } from 'react';
 import { createClient } from '../api/jira-client.js';
 import type { JiraIssue } from '../types/jira.js';
-import { extractJiraIssueKey, getCurrentBranch, isGitRepository } from '../utils/git.js';
+import { getTicketFromBranch, getCurrentBranch, isGitRepository } from '../utils/git.js';
 import {
   formatJiraDate,
   formatTimeForDisplay,
@@ -87,7 +87,7 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
         } else {
           // Try to extract JIRA issue key from branch name
           const branch = getCurrentBranch();
-          issueKey = extractJiraIssueKey(branch);
+          issueKey = getTicketFromBranch(branch);
         }
 
         if (!issueKey) {

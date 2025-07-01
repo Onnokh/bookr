@@ -13,11 +13,18 @@
     "build": "tsc",
     "start": "node dist/cli.js",
     "postbuild": "chmod +x dist/cli.js",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "test-jira": "tsx src/scripts/test-jira-connection.ts",
-    "test-worklog": "tsx src/scripts/test-worklog.ts",
-    "test-list-issues": "tsx src/scripts/test-list-jira-issues.ts",
-    "test-update": "tsx src/scripts/test-update-checker.ts",
+    "test": "vitest",
+    "test:run": "vitest run",
+    "test:ui": "vitest --ui",
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest --watch",
+    "test:integration": "vitest run test/integration/",
+    "test:integration:watch": "vitest test/integration/ --watch",
+    "test:integration:jira": "vitest run test/integration/jira-connection.test.ts",
+    "test:integration:worklog": "vitest run test/integration/worklog.test.ts",
+    "test:integration:issues": "vitest run test/integration/issues.test.ts",
+    "test:integration:update": "vitest run test/integration/update-checker.test.ts",
+    "test:integration:extraction": "vitest run test/integration/issue-extraction.test.ts",
     "biome:lint": "biome lint .",
     "biome:check": "biome check .",
     "biome:format": "biome format . --write",
@@ -60,13 +67,19 @@
     "@biomejs/biome": "^1.5.3",
     "@types/node": "^20.10.5",
     "@types/react": "^18.2.45",
+    "@vitest/coverage-v8": "^1.2.1",
+    "@vitest/ui": "^1.2.1",
     "tsx": "^4.7.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^1.6.1"
   },
   "engines": {
     "node": ">=18.0.0"
   },
   "publishConfig": {
     "access": "public"
+  },
+  "imports": {
+    "@/*": "./src/*"
   }
 }

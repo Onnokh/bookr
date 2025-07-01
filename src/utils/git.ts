@@ -36,7 +36,7 @@ export function isGitRepository(): boolean {
 /**
  * Extract JIRA issue key from a branch name
  */
-export function extractJiraIssueKey(branchName: string): string | null {
+export function getTicketFromBranch(branchName: string): string | null {
   // Common patterns for JIRA issue keys in branch names
   // Support both uppercase and lowercase project keys
   // Handle additional path segments after the issue key
