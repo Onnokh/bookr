@@ -1,6 +1,6 @@
 {
-  "name": "bookr",
-  "version": "1.0.0",
+  "name": "bookr-cli",
+  "version": "0.0.1",
   "type": "module",
   "description": "A terminal-based CLI tool to book time in Jira using the Tempo plugin by parsing your current Git branch name",
   "main": "dist/cli.js",
@@ -39,16 +39,16 @@
     "worklog",
     "timesheet"
   ],
-  "author": "",
+  "author": "Onno Klein Hofmeijer",
   "license": "ISC",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yourusername/bookr.git"
+    "url": "git+https://github.com/Onnokh/bookr.git"
   },
   "bugs": {
-    "url": "https://github.com/yourusername/bookr/issues"
+    "url": "https://github.com/Onnokh/bookr/issues"
   },
-  "homepage": "https://github.com/yourusername/bookr#readme",
+  "homepage": "https://github.com/Onnokh/bookr#readme",
   "dependencies": {
     "better-fetch": "^1.0.0",
     "env-paths": "^3.0.0",
