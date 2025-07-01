@@ -75,24 +75,24 @@ async function main() {
     process.exit(0);
   }
 
-  // Handle "today" command
+    // Handle "today" command
   if (input[0] === 'today') {
-    const { showTodayWorklogs } = await import('./commands/index.js');
-    await showTodayWorklogs();
+    const command = await import('./commands/today.js');
+    await command.default();
     return;
   }
 
   // Handle "sprint" command
   if (input[0] === 'sprint') {
-    const { showSprintWorklogs } = await import('./commands/index.js');
-    await showSprintWorklogs();
+    const command = await import('./commands/sprint.js');
+    await command.default();
     return;
   }
 
   // Handle "init" command
   if (input[0] === 'init') {
-    const { init } = await import('./commands/index.js');
-    await init();
+    const command = await import('./commands/init.js');
+    await command.default();
     return;
   }
 

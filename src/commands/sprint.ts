@@ -230,6 +230,9 @@ export async function showSprintWorklogs() {
   }
 }
 
+// Default export for CLI usage
+export default showSprintWorklogs;
+
 // For backward compatibility when running directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   showSprintWorklogs().catch(console.error);

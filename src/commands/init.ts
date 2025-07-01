@@ -44,6 +44,9 @@ export async function init() {
   console.log(`\n✅ Config saved to ${configFile}`);
 }
 
+// Default export for CLI usage
+export default init;
+
 // For backward compatibility when running directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   init().catch(err => {

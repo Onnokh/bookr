@@ -72,6 +72,9 @@ export async function showTodayWorklogs() {
   }
 }
 
+// Default export for CLI usage
+export default showTodayWorklogs;
+
 // For backward compatibility when running directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   showTodayWorklogs().catch(console.error);
