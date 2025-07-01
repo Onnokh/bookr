@@ -125,7 +125,7 @@ export class JiraClient {
    */
   async deleteWorklog(issueKey: string, worklogId: string): Promise<void> {
     const url = `${this.auth.baseUrl}/rest/api/3/issue/${issueKey}/worklog/${worklogId}`;
-    
+
     try {
       const response = await fetch(url, {
         method: 'DELETE',

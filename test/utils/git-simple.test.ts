@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
 import { getTicketFromBranch } from '@/utils/git.js';
+import { describe, expect, it } from 'vitest';
 
 describe('Git Utils - Pure Functions', () => {
   describe('getTicketFromBranch', () => {

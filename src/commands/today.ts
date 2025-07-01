@@ -20,27 +20,29 @@ export async function showTodayWorklogs() {
     }
     // Get stored worklogs for showing IDs
     const storedWorklogs = getTodaysStoredWorklogs();
-    const storedWorklogMap = new Map(storedWorklogs.map(w => [w.id, w]));
+    const storedWorklogMap = new Map(storedWorklogs.map((w) => [w.id, w]));
 
     // Calculate total time and display worklogs
     let totalSeconds = 0;
     console.log('─'.repeat(120));
     console.log(`${'ID'.padEnd(17)} | ${'Issue'.padEnd(12)} | ${'Time'.padEnd(8)} | Summary`);
     console.log('─'.repeat(120));
-    
+
     for (const { issue, worklog } of todayWorklogs) {
       const timeSpent = worklog.timeSpentSeconds || 0;
       totalSeconds += timeSpent;
       const timeDisplay = secondsToJiraFormat(timeSpent);
       const comment = extractCommentText(worklog.comment);
-      
+
       // Show worklog ID - all worklogs can be undone, but indicate source
       const worklogId = worklog.id || 'N/A';
       const isStoredWorklog = storedWorklogMap.has(worklogId);
       const source = isStoredWorklog ? ' (bookr)' : '';
-      
-      console.log(`${(worklogId + source).padEnd(17)} | ${issue.key.padEnd(12)} | ${timeDisplay.padEnd(8)} | ${issue.fields.summary}`);
-      
+
+      console.log(
+        `${(worklogId + source).padEnd(17)} | ${issue.key.padEnd(12)} | ${timeDisplay.padEnd(8)} | ${issue.fields.summary}`
+      );
+
       if (comment && comment !== 'No comment') {
         console.log(`${' '.repeat(42)} └─ ${comment}`);
       }

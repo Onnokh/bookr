@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { JiraClient } from '@/api/jira-client';
 import type { JiraAuth, JiraIssue, JiraUser, JiraWorklog } from '@/types/jira';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock fetch globally
 global.fetch = vi.fn() as any;

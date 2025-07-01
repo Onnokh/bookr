@@ -44,12 +44,12 @@ export function readStoredWorklogs(): WorklogStorageData {
 
     const content = readFileSync(storagePath, 'utf-8');
     const data = JSON.parse(content) as WorklogStorageData;
-    
+
     // Ensure we have the expected structure
     if (!data.worklogs || !Array.isArray(data.worklogs)) {
       return { worklogs: [], lastCleanup: new Date().toISOString() };
     }
-    
+
     return data;
   } catch {
     return { worklogs: [], lastCleanup: new Date().toISOString() };
@@ -89,7 +89,7 @@ export function storeWorklog(
     }
 
     const data = readStoredWorklogs();
-    
+
     const storedWorklog: StoredWorklog = {
       id: worklog.id,
       issueKey: issue.key,
@@ -97,7 +97,7 @@ export function storeWorklog(
       issueSummary: issue.fields.summary,
       timeSpent: worklog.timeSpent,
       timeSpentSeconds: worklog.timeSpentSeconds || 0,
-      comment: originalComment || undefined,
+      ...(originalComment && { comment: originalComment }),
       started: worklog.started || new Date().toISOString(),
       createdAt: new Date().toISOString(),
       author: worklog.author,
@@ -105,7 +105,7 @@ export function storeWorklog(
 
     // Add to the beginning of the array (most recent first)
     data.worklogs.unshift(storedWorklog);
-    
+
     // Keep only the last 100 worklogs to prevent unlimited growth
     if (data.worklogs.length > 100) {
       data.worklogs = data.worklogs.slice(0, 100);
@@ -123,7 +123,7 @@ export function storeWorklog(
  */
 export function getStoredWorklogById(worklogId: string): StoredWorklog | null {
   const data = readStoredWorklogs();
-  return data.worklogs.find(w => w.id === worklogId) || null;
+  return data.worklogs.find((w) => w.id === worklogId) || null;
 }
 
 /**
@@ -133,13 +133,13 @@ export function removeStoredWorklog(worklogId: string): boolean {
   try {
     const data = readStoredWorklogs();
     const originalLength = data.worklogs.length;
-    data.worklogs = data.worklogs.filter(w => w.id !== worklogId);
-    
+    data.worklogs = data.worklogs.filter((w) => w.id !== worklogId);
+
     if (data.worklogs.length < originalLength) {
       writeStoredWorklogs(data);
       return true;
     }
-    
+
     return false;
   } catch {
     return false;
@@ -155,7 +155,7 @@ export function getTodaysStoredWorklogs(): StoredWorklog[] {
   const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
   const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
 
-  return data.worklogs.filter(worklog => {
+  return data.worklogs.filter((worklog) => {
     const worklogDate = new Date(worklog.started);
     return worklogDate >= startOfDay && worklogDate <= endOfDay;
   });
@@ -169,7 +169,7 @@ export function getRecentStoredWorklogs(days = 10): StoredWorklog[] {
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - days);
 
-  return data.worklogs.filter(worklog => {
+  return data.worklogs.filter((worklog) => {
     const worklogDate = new Date(worklog.started);
     return worklogDate >= cutoffDate;
   });
@@ -185,13 +185,13 @@ export function cleanupOldWorklogs(): number {
     cutoffDate.setDate(cutoffDate.getDate() - 30);
 
     const originalLength = data.worklogs.length;
-    data.worklogs = data.worklogs.filter(worklog => {
+    data.worklogs = data.worklogs.filter((worklog) => {
       const worklogDate = new Date(worklog.createdAt);
       return worklogDate >= cutoffDate;
     });
 
     const removedCount = originalLength - data.worklogs.length;
-    
+
     if (removedCount > 0) {
       data.lastCleanup = new Date().toISOString();
       writeStoredWorklogs(data);

@@ -24,7 +24,11 @@ export function loadConfigFromFile(): Partial<JiraAuth> | null {
   }
 }
 
-export function saveConfigToFile(config: any): void {
+export function saveConfigToFile(config: {
+  JIRA_BASE_URL: string;
+  JIRA_EMAIL: string;
+  JIRA_API_TOKEN: string;
+}): void {
   const configFile = path.join(envPaths('bookr').config, 'config.json');
   fs.writeFileSync(configFile, JSON.stringify(config, null, 2));
 }

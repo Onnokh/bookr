@@ -1,7 +1,11 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { createClient } from '../../src/api/jira-client.js';
 import type { JiraClient } from '../../src/api/jira-client.js';
-import { formatJiraDate, parseTimeToSeconds, secondsToJiraFormat } from '../../src/utils/time-parser.js';
+import {
+  formatJiraDate,
+  parseTimeToSeconds,
+  secondsToJiraFormat,
+} from '../../src/utils/time-parser.js';
 
 describe('JIRA Integration - Worklog', () => {
   let client: JiraClient | null = null;
@@ -13,7 +17,7 @@ describe('JIRA Integration - Worklog', () => {
       console.log('   Set JIRA_BASE_URL, JIRA_EMAIL, and JIRA_API_TOKEN to run these tests');
       return;
     }
-    
+
     client = createClient();
   });
 
@@ -47,12 +51,12 @@ describe('JIRA Integration - Worklog', () => {
 
     try {
       const result = await client.addWorklog(issueKey, worklog);
-      
+
       expect(result).toHaveProperty('id');
       expect(result).toHaveProperty('timeSpentSeconds');
       expect(typeof result.id).toBe('string');
       expect(typeof result.timeSpentSeconds).toBe('number');
-      
+
       console.log('✅ Worklog created successfully!');
       console.log(`   Worklog ID: ${result.id}`);
       console.log(`   Time spent: ${result.timeSpentSeconds} seconds`);
@@ -64,7 +68,7 @@ describe('JIRA Integration - Worklog', () => {
       console.log('   - Issue key not existing');
       console.log('   - Insufficient permissions');
       console.log('   - Invalid issue key format');
-      
+
       // Still expect an error to be thrown
       expect(error).toBeInstanceOf(Error);
     }
@@ -76,7 +80,7 @@ describe('JIRA Integration - Worklog', () => {
     expect(parseTimeToSeconds('1h')).toBe(3600);
     expect(parseTimeToSeconds('1h30m')).toBe(5400);
     expect(parseTimeToSeconds('2.5h')).toBe(9000);
-    
+
     expect(secondsToJiraFormat(1800)).toBe('30m');
     expect(secondsToJiraFormat(3600)).toBe('1h');
     expect(secondsToJiraFormat(5400)).toBe('1h 30m');
@@ -86,8 +90,8 @@ describe('JIRA Integration - Worklog', () => {
   it('should format dates correctly for JIRA', () => {
     const testDate = new Date('2024-01-15T10:30:00.000Z');
     const formatted = formatJiraDate(testDate);
-    
+
     // Should be in ISO format with timezone offset
     expect(formatted).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}[+-]\d{4}$/);
   });
-}); 
+});

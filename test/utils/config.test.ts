@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { loadConfigFromFile, saveConfigToFile } from '@/utils/config.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('env-paths', () => ({
   default: () => ({ config: '/mock' }),

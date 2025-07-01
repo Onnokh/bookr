@@ -3,7 +3,7 @@ import type React from 'react';
 import { useEffect, useState } from 'react';
 import { createClient } from '../api/jira-client.js';
 import type { JiraIssue } from '../types/jira.js';
-import { getTicketFromBranch, getCurrentBranch, isGitRepository } from '../utils/git.js';
+import { getCurrentBranch, getTicketFromBranch, isGitRepository } from '../utils/git.js';
 import {
   formatJiraDate,
   formatTimeForDisplay,
