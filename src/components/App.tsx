@@ -218,9 +218,6 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
   if (appState === 'creating') {
     return (
       <Box flexDirection="column" padding={1}>
-        <Text color="green" bold>
-          🧪 Bookr - Tempo CLI Tool
-        </Text>
         <Box marginTop={1}>
           <Text>⏳ Creating worklog...</Text>
         </Box>
@@ -230,14 +227,15 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
 
   // Success state
   if (appState === 'success' && jiraIssue) {
+    // Construct JIRA issue URL
+    const client = createJiraClientFromEnv();
+    const issueUrl = `${client.getBaseUrl()}/browse/${jiraIssue.key}`;
+    
     return (
       <Box flexDirection="column" padding={1}>
-        <Text color="green" bold>
-          🧪 Bookr - Tempo CLI Tool
-        </Text>
         <Box marginTop={1}>
           <Text color="green" bold>
-            ✅ Worklog created successfully!
+            ✅ Worklog created!
           </Text>
         </Box>
         <Box marginTop={1} flexDirection="column">
@@ -252,6 +250,11 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
               <Text color="yellow">Description:</Text> {flags.description}
             </Text>
           )}
+          <Box marginTop={1}>
+            <Text color="blue" underline>
+              🔗 <Text color="cyan">{issueUrl}</Text>
+            </Text>
+          </Box>
         </Box>
       </Box>
     );
@@ -261,9 +264,6 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
   if (appState === 'cancelled') {
     return (
       <Box flexDirection="column" padding={1}>
-        <Text color="green" bold>
-          🧪 Bookr - Tempo CLI Tool
-        </Text>
         <Box marginTop={1}>
           <Text color="yellow">
             ❌ Worklog creation cancelled
@@ -276,9 +276,6 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
   // Fallback
   return (
     <Box flexDirection="column" padding={1}>
-      <Text color="green" bold>
-        🧪 Bookr - Tempo CLI Tool
-      </Text>
       <Text>Unknown state</Text>
     </Box>
   );

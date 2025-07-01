@@ -108,8 +108,6 @@ export class JiraClient {
       };
 
       const requestBody = JSON.stringify(apiWorklog);
-      console.log(`Debug: Sending worklog request to ${url}`);
-      console.log(`Debug: Request body: ${requestBody}`);
       const response = await fetch(url, {
         method: 'POST',
         headers: this.baseHeaders,
@@ -117,8 +115,6 @@ export class JiraClient {
       });
       if (!response.ok) {
         const errorData = await response.json() as JiraError;
-        console.log(`Debug: Response status: ${response.status}`);
-        console.log(`Debug: Response body: ${JSON.stringify(errorData)}`);
         throw new Error(`Failed to add worklog: ${errorData.errorMessages?.join(', ') || response.statusText}`);
       }
       return await response.json() as JiraWorklog;
@@ -171,6 +167,13 @@ export class JiraClient {
     } catch (error) {
       throw new Error(`Error fetching worklogs for ${issueKey}: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  }
+
+  /**
+   * Get the base URL for constructing JIRA issue links
+   */
+  getBaseUrl(): string {
+    return this.auth.baseUrl;
   }
 
   /**
