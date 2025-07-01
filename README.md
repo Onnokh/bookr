@@ -135,4 +135,3 @@ ISC License - see `package.json` for details.
 - [Ink Documentation](https://github.com/vadimdemedes/ink)
 - [Biome Documentation](https://biomejs.dev/)
 - [Tempo API Documentation](https://tempo.io/api-docs/)
-- [Development Plan](./DEVELOPMENT_PLAN.md) 

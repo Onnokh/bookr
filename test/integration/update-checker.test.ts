@@ -68,7 +68,18 @@ describe('Update Checker Integration', () => {
       expect(updateInfo.current).not.toBe(updateInfo.latest);
     } else {
       console.log('✅ You are running the latest version!');
-      expect(updateInfo.current).toBe(updateInfo.latest);
+      // When no update is available, current version should be >= latest version
+      // This handles cases where current version is newer than what's published on npm
+      const currentParts = updateInfo.current.split('.').map(Number);
+      const latestParts = updateInfo.latest.split('.').map(Number);
+      
+      // Compare versions: current should be >= latest when no update is available
+      const isCurrentNewerOrEqual = 
+        currentParts[0] > latestParts[0] ||
+        (currentParts[0] === latestParts[0] && currentParts[1] > latestParts[1]) ||
+        (currentParts[0] === latestParts[0] && currentParts[1] === latestParts[1] && currentParts[2] >= latestParts[2]);
+      
+      expect(isCurrentNewerOrEqual).toBe(true);
     }
     
     // hasUpdate and isOutdated should be consistent
