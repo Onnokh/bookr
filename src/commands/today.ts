@@ -1,6 +1,7 @@
 import { createClient } from '../api/jira-client.js';
 import { extractCommentText } from '../utils/jira.js';
 import { secondsToJiraFormat } from '../utils/time-parser.js';
+import { getTodaysStoredWorklogs } from '../utils/worklog-storage.js';
 
 export async function showTodayWorklogs() {
   try {
@@ -17,20 +18,32 @@ export async function showTodayWorklogs() {
       console.log('📭 No worklogs found for today.');
       return;
     }
-    // Calculate total time
+    // Get stored worklogs for showing IDs
+    const storedWorklogs = getTodaysStoredWorklogs();
+    const storedWorklogMap = new Map(storedWorklogs.map(w => [w.id, w]));
+
+    // Calculate total time and display worklogs
     let totalSeconds = 0;
-    console.log('─'.repeat(80));
+    console.log('─'.repeat(120));
+    console.log(`${'ID'.padEnd(17)} | ${'Issue'.padEnd(12)} | ${'Time'.padEnd(8)} | Summary`);
+    console.log('─'.repeat(120));
+    
     for (const { issue, worklog } of todayWorklogs) {
       const timeSpent = worklog.timeSpentSeconds || 0;
       totalSeconds += timeSpent;
       const timeDisplay = secondsToJiraFormat(timeSpent);
-      //   const started = worklog.started ? new Date(worklog.started).toLocaleTimeString() : 'N/A';
       const comment = extractCommentText(worklog.comment);
-      console.log(`${issue.key.padEnd(12)} | ${issue.fields.summary}`);
+      
+      // Show worklog ID if it's a stored worklog (created via bookr)
+      const worklogId = worklog.id || 'N/A';
+      const isStoredWorklog = storedWorklogMap.has(worklogId);
+      const idDisplay = isStoredWorklog ? worklogId : `${worklogId} (external)`;
+      
+      console.log(`${idDisplay.padEnd(17)} | ${issue.key.padEnd(12)} | ${timeDisplay.padEnd(8)} | ${issue.fields.summary}`);
+      
       if (comment && comment !== 'No comment') {
-        console.log(`${timeDisplay.padEnd(12)} - ${comment}`);
+        console.log(`${' '.repeat(42)} └─ ${comment}`);
       }
-      console.log('');
     }
     console.log('─'.repeat(80));
     const totalTime = secondsToJiraFormat(totalSeconds);

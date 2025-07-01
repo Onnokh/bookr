@@ -19,12 +19,14 @@ async function main() {
       $ bookr [time] [options]
       $ bookr today
       $ bookr sprint
+      $ bookr undo [worklog_id]
 
     Arguments
-      ticket  Jira ticket key (e.g., "PROJ-123") - optional, will use Git branch if not provided
-      time    Time to log (e.g., "2h 30m", "1h15m", "45m")
-      today   Show today's worklogs and total hours
-      sprint  Show worklogs for the last 14 days (sprint period)
+      ticket     Jira ticket key (e.g., "PROJ-123") - optional, will use Git branch if not provided
+      time       Time to log (e.g., "2h 30m", "1h15m", "45m")
+      today      Show today's worklogs and total hours with IDs
+      sprint     Show worklogs for the last 14 days (sprint period)
+      undo       Delete recent worklogs (interactive) or specific worklog by ID
 
     Options
       --help, -h        Show help
@@ -40,6 +42,8 @@ async function main() {
       $ bookr --date "2024-01-15" 4h         # With specific date
       $ bookr today
       $ bookr sprint
+      $ bookr undo                            # Show recent worklogs to undo
+      $ bookr undo 12345                      # Undo specific worklog by ID
       $ bookr update                          # Check for updates
     `,
     {
@@ -81,6 +85,14 @@ async function main() {
   if (input[0] === 'init') {
     const command = await import('./commands/init.js');
     await command.default();
+    return;
+  }
+
+  // Handle "undo" command
+  if (input[0] === 'undo') {
+    const command = await import('./commands/undo.js');
+    const worklogId = input[1]; // Optional worklog ID
+    await command.default(worklogId);
     return;
   }
 

@@ -11,6 +11,7 @@ import {
   parseTimeToSeconds,
   secondsToJiraFormat,
 } from '../utils/time-parser.js';
+import { storeWorklog } from '../utils/worklog-storage.js';
 import { ConfirmationPrompt } from './ConfirmationPrompt.js';
 
 interface AppProps {
@@ -123,12 +124,16 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
     try {
       const client = createClient();
       const timeSpentSeconds = parseTimeToSeconds(timeSpent);
+      const comment = flags.description || 'Work logged via Bookr CLI';
 
-      await client.addWorklog(jiraIssue.key, {
+      const createdWorklog = await client.addWorklog(jiraIssue.key, {
         timeSpent: secondsToJiraFormat(timeSpentSeconds),
-        comment: flags.description || 'Work logged via Bookr CLI',
+        comment,
         started: formatJiraDate(new Date()),
       });
+
+      // Store the worklog locally for potential undo
+      storeWorklog(jiraIssue, createdWorklog, comment);
 
       setAppState('success');
     } catch (error) {

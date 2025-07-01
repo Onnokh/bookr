@@ -121,6 +121,31 @@ export class JiraClient {
   }
 
   /**
+   * Delete a worklog entry from a JIRA issue
+   */
+  async deleteWorklog(issueKey: string, worklogId: string): Promise<void> {
+    const url = `${this.auth.baseUrl}/rest/api/3/issue/${issueKey}/worklog/${worklogId}`;
+    
+    try {
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: this.baseHeaders,
+      });
+
+      if (!response.ok) {
+        const errorData = (await response.json()) as JiraError;
+        throw new Error(
+          `Failed to delete worklog: ${errorData.errorMessages?.join(', ') || response.statusText}`
+        );
+      }
+    } catch (error) {
+      throw new Error(
+        `Error deleting worklog ${worklogId} from ${issueKey}: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
    * Parse time string to seconds (helper method)
    */
   private parseTimeToSeconds(timeString: string): number {
