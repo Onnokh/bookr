@@ -4,8 +4,14 @@ import { render } from 'ink';
 import meow from 'meow';
 import React from 'react';
 import { App } from './components/App.js';
+import { showUpdateNotification } from './utils/update.js';
 
 async function main() {
+  // Show update notification (non-blocking)
+  showUpdateNotification().catch(() => {
+    // Silently fail update notifications
+  });
+
   const cli = meow(
     `
     Usage
@@ -34,6 +40,7 @@ async function main() {
       $ bookr --date "2024-01-15" 4h         # With specific date
       $ bookr today
       $ bookr sprint
+      $ bookr update                          # Check for updates
     `,
     {
       importMeta: import.meta,
@@ -74,6 +81,26 @@ async function main() {
   if (input[0] === 'init') {
     const command = await import('./commands/init.js');
     await command.default();
+    return;
+  }
+
+  // Handle "update" command
+  if (input[0] === 'update') {
+    const { forceCheckForUpdates } = await import('./utils/update.js');
+    try {
+      const updateInfo = await forceCheckForUpdates();
+      if (updateInfo.hasUpdate) {
+        console.log(`📦 Update available: ${updateInfo.current} → ${updateInfo.latest}`);
+        console.log('Run: npm update -g bookr-cli');
+      } else {
+        console.log('✅ You are running the latest version!');
+      }
+    } catch (error) {
+      console.error(
+        '❌ Failed to check for updates:',
+        error instanceof Error ? error.message : 'Unknown error'
+      );
+    }
     return;
   }
 

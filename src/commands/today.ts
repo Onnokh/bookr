@@ -1,46 +1,10 @@
-import { createJiraClientFromEnv } from '../api/jira-client.js';
+import { createClient } from '../api/jira-client.js';
+import { extractCommentText } from '../utils/jira.js';
 import { secondsToJiraFormat } from '../utils/time-parser.js';
-
-/**
- * Extract text from JIRA comment (handles both string and structured formats)
- */
-function extractCommentText(
-  comment:
-    | string
-    | {
-        content: Array<{ content: Array<{ text: string; type: string }>; type: string }>;
-        type: string;
-        version: number;
-      }
-    | undefined
-): string {
-  if (!comment) return 'No comment';
-
-  if (typeof comment === 'string') {
-    return comment;
-  }
-
-  // Handle structured comment format
-  if (comment.content && Array.isArray(comment.content)) {
-    const texts: string[] = [];
-    for (const block of comment.content) {
-      if (block.content && Array.isArray(block.content)) {
-        for (const item of block.content) {
-          if (item.text) {
-            texts.push(item.text);
-          }
-        }
-      }
-    }
-    return texts.join(' ').trim() || 'No comment';
-  }
-
-  return 'No comment';
-}
 
 export async function showTodayWorklogs() {
   try {
-    const client = createJiraClientFromEnv();
+    const client = createClient();
     // Test connection
     const isConnected = await client.testConnection();
     if (!isConnected) {

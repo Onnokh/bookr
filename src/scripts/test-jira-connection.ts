@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
-import { createJiraClientFromEnv } from '../api/jira-client.js';
+import { createClient } from '../api/jira-client.js';
 
 async function testJiraConnection() {
   console.log('🔗 Testing JIRA connection...\n');
 
   try {
-    const client = createJiraClientFromEnv();
+    const client = createClient();
 
     // Test basic connection
     console.log('1. Testing connection...');

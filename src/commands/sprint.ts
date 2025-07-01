@@ -1,54 +1,9 @@
 import inquirer from 'inquirer';
-import { type JiraClient, createJiraClientFromEnv } from '../api/jira-client.js';
+import { type JiraClient, createClient } from '../api/jira-client.js';
 import type { JiraIssue, JiraWorklog } from '../types/jira.js';
+import { formatDateRange } from '../utils/date.js';
+import { extractCommentText } from '../utils/jira.js';
 import { secondsToJiraFormat } from '../utils/time-parser.js';
-
-/**
- * Extract text from JIRA comment (handles both string and structured formats)
- */
-function extractCommentText(
-  comment:
-    | string
-    | {
-        content: Array<{ content: Array<{ text: string; type: string }>; type: string }>;
-        type: string;
-        version: number;
-      }
-    | undefined
-): string {
-  if (!comment) return 'No comment';
-
-  if (typeof comment === 'string') {
-    return comment;
-  }
-
-  // Handle structured comment format
-  if (comment.content && Array.isArray(comment.content)) {
-    const texts: string[] = [];
-    for (const block of comment.content) {
-      if (block.content && Array.isArray(block.content)) {
-        for (const item of block.content) {
-          if (item.text) {
-            texts.push(item.text);
-          }
-        }
-      }
-    }
-    return texts.join(' ').trim() || 'No comment';
-  }
-
-  return 'No comment';
-}
-
-/**
- * Format date range for display
- */
-function formatDateRange(startDate: Date, endDate: Date): string {
-  const startFormatted = startDate.toLocaleDateString();
-  const endFormatted = endDate.toLocaleDateString();
-
-  return `${startFormatted} - ${endFormatted}`;
-}
 
 function parseArgs(): { history: boolean } {
   return {
@@ -134,7 +89,7 @@ async function selectSprint(client: JiraClient): Promise<{
 
 export async function showSprintWorklogs() {
   try {
-    const client = createJiraClientFromEnv();
+    const client = createClient();
 
     // Test connection
     const isConnected = await client.testConnection();

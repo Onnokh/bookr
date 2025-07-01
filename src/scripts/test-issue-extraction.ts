@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { extractJiraIssueKey } from './utils/git.js';
+import { extractJiraIssueKey } from '../utils/git.js';
 
 function testIssueExtraction() {
   const testBranches = [

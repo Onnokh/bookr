@@ -78,14 +78,27 @@ bookr today
 # View sprint overview
 bookr sprint
 
+# Check for updates
+bookr update
+
 # Get help
 bookr --help
 
-# version
+# Show version
 bookr --version
 ```
 
 ## 🔧 Architecture
+
+### Update Notifications
+
+The CLI automatically checks for updates once per day and displays a notification if a newer version is available. You can also manually check for updates using:
+
+```bash
+bookr update
+```
+
+Update information is cached to avoid excessive API calls to the npm registry.
 
 ### Technology Stack
 

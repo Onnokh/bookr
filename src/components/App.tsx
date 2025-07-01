@@ -1,7 +1,7 @@
 import { Box, Text } from 'ink';
 import type React from 'react';
 import { useEffect, useState } from 'react';
-import { createJiraClientFromEnv } from '../api/jira-client.js';
+import { createClient } from '../api/jira-client.js';
 import type { JiraIssue } from '../types/jira.js';
 import { extractJiraIssueKey, getCurrentBranch, isGitRepository } from '../utils/git.js';
 import {
@@ -96,7 +96,7 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
         }
 
         try {
-          const client = createJiraClientFromEnv();
+          const client = createClient();
           const issue = await client.getIssue(issueKey);
           setJiraIssue(issue);
           setAppState('confirm');
@@ -121,7 +121,7 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
     setAppState('creating');
 
     try {
-      const client = createJiraClientFromEnv();
+      const client = createClient();
       const timeSpentSeconds = parseTimeToSeconds(timeSpent);
 
       await client.addWorklog(jiraIssue.key, {
@@ -225,7 +225,7 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
   // Success state
   if (appState === 'success' && jiraIssue) {
     // Construct JIRA issue URL
-    const client = createJiraClientFromEnv();
+    const client = createClient();
     const issueUrl = `${client.getBaseUrl()}/browse/${jiraIssue.key}`;
 
     return (

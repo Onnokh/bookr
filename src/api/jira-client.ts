@@ -1,25 +1,5 @@
-import fs from 'node:fs';
-import path from 'node:path';
-import envPaths from 'env-paths';
 import type { JiraAuth, JiraError, JiraIssue, JiraUser, JiraWorklog } from '../types/jira.js';
-
-function loadConfigFromFile(): Partial<JiraAuth> | null {
-  try {
-    const configFile = path.join(envPaths('bookr').config, 'config.json');
-    if (fs.existsSync(configFile)) {
-      const raw = fs.readFileSync(configFile, 'utf-8');
-      const parsed = JSON.parse(raw);
-      return {
-        baseUrl: parsed.JIRA_BASE_URL,
-        email: parsed.JIRA_EMAIL,
-        apiToken: parsed.JIRA_API_TOKEN,
-      };
-    }
-    return null;
-  } catch (_e) {
-    return null;
-  }
-}
+import { loadConfigFromFile } from '../utils/config.js';
 
 export class JiraClient {
   private auth: JiraAuth;
@@ -505,7 +485,7 @@ export class JiraClient {
 /**
  * Create a JIRA client from environment variables
  */
-export function createJiraClientFromEnv(): JiraClient {
+export function createClient(): JiraClient {
   // Try config file first
   const fileConfig = loadConfigFromFile();
   const baseUrl = fileConfig?.baseUrl || process.env['JIRA_BASE_URL'];

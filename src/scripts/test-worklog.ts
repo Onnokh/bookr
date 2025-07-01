@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 
-import { createJiraClientFromEnv } from '../api/jira-client.js';
+import { createClient } from '../api/jira-client.js';
 import { formatJiraDate, parseTimeToSeconds, secondsToJiraFormat } from '../utils/time-parser.js';
 
 async function testWorklogCreation() {
   console.log('🧪 Testing worklog creation...\n');
 
   try {
-    const client = createJiraClientFromEnv();
+    const client = createClient();
 
     // Test connection
     const isConnected = await client.testConnection();
