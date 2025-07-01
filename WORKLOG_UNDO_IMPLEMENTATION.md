@@ -5,9 +5,10 @@ This document describes the implementation of local worklog storage and undo fun
 ## Overview
 
 The implementation adds the ability to:
-1. Locally store created worklogs for tracking and potential reversal
-2. Display worklog IDs in the `bookr today` command
-3. Undo (delete) recently created worklogs via `bookr undo` command
+1. Locally store created worklogs for tracking and enhanced display
+2. Display ALL worklog IDs in the `bookr today` command  
+3. Undo (delete) ANY worklog by ID via `bookr undo` command
+4. Smart worklog discovery across recent time periods
 
 ## Features Implemented
 
@@ -23,19 +24,20 @@ The implementation adds the ability to:
 
 The `bookr today` command now displays:
 - **Worklog IDs**: Shows the JIRA worklog ID for each entry
-- **Source Indicator**: Marks external worklogs (not created via bookr) as "(external)"
+- **Source Indicator**: Marks worklogs created via bookr as "(bookr)" for easy identification
 - **Improved Formatting**: Tabular display with columns for ID, Issue, Time, and Summary
 - **Comment Display**: Shows worklog comments with proper indentation
+- **Universal Undo**: ALL worklogs shown can be undone using their ID
 
 **Example Output:**
 ```
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ID                | Issue        | Time     | Summary
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-12345            | PROJ-123     | 2h 30m   | Fix authentication bug in user login
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+12345 (bookr)    | PROJ-123     | 2h 30m   | Fix authentication bug in user login
                                              └─ Fixed OAuth token validation issue
-67890 (external) | PROJ-456     | 1h       | Code review for feature X
-──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+67890            | PROJ-456     | 1h       | Code review for feature X
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 ```
 
 ### 3. Undo Command (`src/commands/undo.ts`)
@@ -43,16 +45,17 @@ ID                | Issue        | Time     | Summary
 Two usage modes:
 
 #### Interactive Mode: `bookr undo`
-- Shows a table of recent worklogs (last 7 days) that can be undone
-- Displays worklog ID, issue, time, summary, and date
-- Only shows worklogs created via bookr CLI
+- Shows a table of today's worklogs that can be undone
+- Displays worklog ID, issue, time, summary, and source (bookr vs other)
+- Shows ALL worklogs from today, not just those created via bookr CLI
 - Provides instructions for undoing specific worklogs
 
 #### Direct Mode: `bookr undo <WORKLOG_ID>`
-- Deletes a specific worklog by ID
-- Shows worklog details before deletion
-- Removes the worklog from both JIRA and local storage
-- Provides error handling for missing or inaccessible worklogs
+- Deletes ANY worklog by its JIRA ID (if you have permission)
+- Searches recent worklogs (7 days) to find details before deletion
+- Shows worklog details before deletion for confirmation
+- Removes the worklog from both JIRA and local storage (if stored locally)
+- Works with any valid JIRA worklog ID, regardless of how it was created
 
 ### 4. JIRA API Enhancement (`src/api/jira-client.ts`)
 
@@ -85,13 +88,13 @@ bookr today
 ### Interactive Undo
 ```bash
 bookr undo
-# Shows table of recent undoable worklogs with instructions
+# Shows table of today's worklogs with IDs and source indicators
 ```
 
 ### Direct Undo
 ```bash
 bookr undo 12345
-# Deletes specific worklog with ID 12345
+# Deletes any worklog with JIRA ID 12345 (searches recent worklogs for details)
 ```
 
 ## Technical Implementation Details
@@ -155,18 +158,19 @@ Arguments
 
 Examples
   $ bookr today                               # View today's worklogs with IDs
-  $ bookr undo                                # Show recent worklogs to undo
-  $ bookr undo 12345                          # Undo specific worklog by ID
+  $ bookr undo                                # Show today's worklogs that can be undone
+  $ bookr undo 12345                          # Undo any worklog by its JIRA ID
 ```
 
 ## Benefits
 
-1. **Safety Net**: Provides ability to undo accidental or incorrect worklog entries
-2. **Transparency**: Shows clear worklog IDs for easy reference
-3. **User-Friendly**: Interactive mode for discovering undoable worklogs
-4. **Efficient**: Direct mode for quick undo operations
-5. **Non-Intrusive**: Doesn't affect existing functionality or performance
-6. **Reliable**: Robust error handling and graceful degradation
+1. **Universal Undo**: Can undo ANY worklog by ID, not just those created via bookr CLI
+2. **Safety Net**: Provides ability to undo accidental or incorrect worklog entries  
+3. **Transparency**: Shows clear worklog IDs for easy reference
+4. **User-Friendly**: Interactive mode for discovering all available worklogs
+5. **Efficient**: Direct mode for quick undo operations with any valid worklog ID
+6. **Non-Intrusive**: Doesn't affect existing functionality or performance
+7. **Reliable**: Robust error handling and graceful degradation
 
 ## Future Enhancements
 

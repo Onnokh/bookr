@@ -34,18 +34,18 @@ export async function showTodayWorklogs() {
       const timeDisplay = secondsToJiraFormat(timeSpent);
       const comment = extractCommentText(worklog.comment);
       
-      // Show worklog ID if it's a stored worklog (created via bookr)
+      // Show worklog ID - all worklogs can be undone, but indicate source
       const worklogId = worklog.id || 'N/A';
       const isStoredWorklog = storedWorklogMap.has(worklogId);
-      const idDisplay = isStoredWorklog ? worklogId : `${worklogId} (external)`;
+      const source = isStoredWorklog ? ' (bookr)' : '';
       
-      console.log(`${idDisplay.padEnd(17)} | ${issue.key.padEnd(12)} | ${timeDisplay.padEnd(8)} | ${issue.fields.summary}`);
+      console.log(`${(worklogId + source).padEnd(17)} | ${issue.key.padEnd(12)} | ${timeDisplay.padEnd(8)} | ${issue.fields.summary}`);
       
       if (comment && comment !== 'No comment') {
         console.log(`${' '.repeat(42)} └─ ${comment}`);
       }
     }
-    console.log('─'.repeat(80));
+    console.log('─'.repeat(120));
     const totalTime = secondsToJiraFormat(totalSeconds);
     const totalHours = (totalSeconds / 3600).toFixed(2);
     console.log(`📊 Total time today: ${totalTime} (${totalHours} hours)`);

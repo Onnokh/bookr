@@ -20,39 +20,97 @@ export async function showUndoSelection() {
       return;
     }
 
-    const recentWorklogs = getRecentStoredWorklogs(7); // Last 7 days
+    // Get all recent worklogs from JIRA (not just locally stored ones)
+    const todayWorklogs = await client.getTodayWorklogs();
     
-    if (recentWorklogs.length === 0) {
-      console.log('📭 No recent worklogs found to undo.');
-      console.log('💡 Only worklogs created via bookr CLI can be undone.');
+    if (todayWorklogs.length === 0) {
+      console.log('📭 No worklogs found for today.');
+      console.log('💡 You can undo any worklog by its ID: bookr undo <WORKLOG_ID>');
       return;
     }
 
-    console.log('🔄 Recent worklogs that can be undone:');
+    // Get stored worklogs for showing which ones were created via bookr
+    const storedWorklogs = getRecentStoredWorklogs(7);
+    const storedWorklogMap = new Map(storedWorklogs.map(w => [w.id, w]));
+
+    console.log('🔄 Today\'s worklogs that can be undone:');
     console.log('─'.repeat(120));
-    console.log(`${'ID'.padEnd(15)} | ${'Issue'.padEnd(12)} | ${'Time'.padEnd(8)} | ${'Summary'.padEnd(50)} | Date`);
+    console.log(`${'ID'.padEnd(17)} | ${'Issue'.padEnd(12)} | ${'Time'.padEnd(8)} | ${'Summary'.padEnd(50)} | Source`);
     console.log('─'.repeat(120));
 
-    for (const worklog of recentWorklogs) {
-      const date = new Date(worklog.started).toLocaleDateString();
-      const time = new Date(worklog.started).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const timeDisplay = secondsToJiraFormat(worklog.timeSpentSeconds);
-      const summary = worklog.issueSummary.length > 48 
-        ? worklog.issueSummary.substring(0, 45) + '...' 
-        : worklog.issueSummary;
+    for (const { issue, worklog } of todayWorklogs) {
+      const worklogId = worklog.id || 'N/A';
+      const timeDisplay = secondsToJiraFormat(worklog.timeSpentSeconds || 0);
+      const summary = issue.fields.summary.length > 48 
+        ? issue.fields.summary.substring(0, 45) + '...' 
+        : issue.fields.summary;
+      
+      const isFromBookr = storedWorklogMap.has(worklogId);
+      const source = isFromBookr ? 'bookr' : 'other';
       
       console.log(
-        `${worklog.id.padEnd(15)} | ${worklog.issueKey.padEnd(12)} | ${timeDisplay.padEnd(8)} | ${summary.padEnd(50)} | ${date} ${time}`
+        `${worklogId.padEnd(17)} | ${issue.key.padEnd(12)} | ${timeDisplay.padEnd(8)} | ${summary.padEnd(50)} | ${source}`
       );
     }
 
     console.log('─'.repeat(120));
     console.log('');
     console.log('💡 To undo a specific worklog, run: bookr undo <WORKLOG_ID>');
+    console.log('💡 You can undo ANY worklog that you have permission to delete');
     console.log('⚠️  Warning: This will permanently delete the worklog from JIRA!');
 
   } catch (error) {
     console.error('❌ Error:', error instanceof Error ? error.message : error);
+  }
+}
+
+/**
+ * Find worklog details by searching recent worklogs
+ */
+async function findWorklogDetails(client: any, worklogId: string) {
+  try {
+    // First check local storage for quick lookup
+    const storedWorklog = getStoredWorklogById(worklogId);
+    if (storedWorklog) {
+      return {
+        issueKey: storedWorklog.issueKey,
+        worklog: {
+          id: storedWorklog.id,
+          timeSpentSeconds: storedWorklog.timeSpentSeconds,
+          timeSpent: storedWorklog.timeSpent,
+          comment: storedWorklog.comment,
+          started: storedWorklog.started
+        },
+        issue: {
+          key: storedWorklog.issueKey,
+          fields: { summary: storedWorklog.issueSummary }
+        }
+      };
+    }
+
+    // Search in today's worklogs
+    const todayWorklogs = await client.getTodayWorklogs();
+    for (const { issue, worklog } of todayWorklogs) {
+      if (worklog.id === worklogId) {
+        return { issueKey: issue.key, worklog, issue };
+      }
+    }
+
+    // If not found in today's worklogs, search in recent worklogs (last 7 days)
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 7);
+    
+    const recentWorklogs = await client.searchWorklogsByDateRange(startDate, endDate);
+    for (const { issue, worklog } of recentWorklogs) {
+      if (worklog.id === worklogId) {
+        return { issueKey: issue.key, worklog, issue };
+      }
+    }
+
+    return null;
+  } catch (error) {
+    return null;
   }
 }
 
@@ -70,51 +128,75 @@ export async function undoWorklogById(worklogId: string) {
       return;
     }
 
-    // Find the worklog in local storage
-    const storedWorklog = getStoredWorklogById(worklogId);
-    if (!storedWorklog) {
-      console.log(`❌ Worklog with ID ${worklogId} not found in local storage.`);
-      console.log('💡 Only worklogs created via bookr CLI can be undone.');
-      console.log('💡 Run "bookr undo" to see available worklogs.');
-      return;
-    }
+    console.log(`� Looking for worklog ${worklogId}...`);
 
-    // Show worklog details for confirmation
-    console.log('🔄 About to delete the following worklog:');
-    console.log('─'.repeat(80));
-    console.log(`Issue: ${storedWorklog.issueKey} - ${storedWorklog.issueSummary}`);
-    console.log(`Time: ${secondsToJiraFormat(storedWorklog.timeSpentSeconds)} (${storedWorklog.timeSpent})`);
-    if (storedWorklog.comment) {
-      console.log(`Comment: ${storedWorklog.comment}`);
-    }
-    const date = new Date(storedWorklog.started).toLocaleString();
-    console.log(`Date: ${date}`);
-    console.log('─'.repeat(80));
+    // Try to find worklog details
+    const worklogDetails = await findWorklogDetails(client, worklogId);
+    
+    if (worklogDetails) {
+      // Show worklog details for confirmation
+      console.log('🔄 About to delete the following worklog:');
+      console.log('─'.repeat(80));
+      console.log(`Issue: ${worklogDetails.issue.key} - ${worklogDetails.issue.fields.summary}`);
+      console.log(`Time: ${secondsToJiraFormat(worklogDetails.worklog.timeSpentSeconds || 0)}`);
+      
+      // Extract comment text properly
+      let comment = '';
+      if (typeof worklogDetails.worklog.comment === 'string') {
+        comment = worklogDetails.worklog.comment;
+      } else if (worklogDetails.worklog.comment && typeof worklogDetails.worklog.comment === 'object') {
+        // Handle JIRA's rich text format
+        try {
+          const content = worklogDetails.worklog.comment as any;
+          if (content.content && Array.isArray(content.content)) {
+            comment = content.content
+              .map((paragraph: any) => 
+                paragraph.content
+                  ?.map((text: any) => text.text || '')
+                  .join('')
+              )
+              .join('\n');
+          }
+        } catch {
+          comment = 'Rich text comment';
+        }
+      }
+      
+      if (comment) {
+        console.log(`Comment: ${comment}`);
+      }
+      
+      const date = new Date(worklogDetails.worklog.started || '').toLocaleString();
+      console.log(`Date: ${date}`);
+      console.log('─'.repeat(80));
 
-    // In a CLI environment, we'll proceed directly
-    // In a real implementation, you might want to add a confirmation prompt
-    console.log('⏳ Deleting worklog from JIRA...');
+      console.log('⏳ Deleting worklog from JIRA...');
 
-    try {
-      // Delete from JIRA
-      await client.deleteWorklog(storedWorklog.issueKey, storedWorklog.id);
-      
-      // Remove from local storage
-      removeStoredWorklog(storedWorklog.id);
-      
-      console.log('✅ Worklog successfully deleted!');
-      console.log(`🗑️  Removed ${secondsToJiraFormat(storedWorklog.timeSpentSeconds)} from ${storedWorklog.issueKey}`);
-      
-    } catch (error) {
-      console.error('❌ Failed to delete worklog from JIRA:', error instanceof Error ? error.message : error);
-      console.log('💡 The worklog may have already been deleted or you may not have permission.');
-      
-      // Ask if they want to remove from local storage anyway
+      try {
+        // Delete from JIRA
+        await client.deleteWorklog(worklogDetails.issueKey, worklogId);
+        
+        // Remove from local storage if it exists there
+        removeStoredWorklog(worklogId);
+        
+        console.log('✅ Worklog successfully deleted!');
+        console.log(`🗑️  Removed ${secondsToJiraFormat(worklogDetails.worklog.timeSpentSeconds || 0)} from ${worklogDetails.issueKey}`);
+        
+      } catch (error) {
+        console.error('❌ Failed to delete worklog from JIRA:', error instanceof Error ? error.message : error);
+        console.log('💡 The worklog may have already been deleted or you may not have permission.');
+        return;
+      }
+    } else {
+      // Worklog not found in recent searches, but we can still try to delete it
+      // if the user provides the issue key
+      console.log(`⚠️  Could not find details for worklog ${worklogId} in recent worklogs.`);
+      console.log('💡 The worklog might be older than 7 days or from a different user.');
+      console.log('💡 To delete it anyway, you need to know the issue key.');
+      console.log('💡 Usage: You can try finding it manually in JIRA first.');
       console.log('');
-      console.log('❓ Remove from local storage anyway? This will prevent further undo attempts.');
-      console.log('💡 You can manually verify in JIRA and then run this command again.');
-      
-      // For now, we'll leave it in local storage so user can try again
+      console.log('💡 Alternative: If you know the issue key, you can delete directly in JIRA:');
+      console.log(`   Browse to the issue → Worklogs → Delete worklog ${worklogId}`);
       return;
     }
 
