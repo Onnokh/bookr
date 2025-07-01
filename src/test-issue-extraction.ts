@@ -10,17 +10,17 @@ function testIssueExtraction() {
     'feature/WILLEMII-62-test-integration',
     'TEMP-789-update-docs',
     'main',
-    'develop'
+    'develop',
   ];
 
   console.log('🧪 Testing JIRA issue key extraction:\n');
 
-  testBranches.forEach(branch => {
+  for (const branch of testBranches) {
     const issueKey = extractJiraIssueKey(branch);
     console.log(`Branch: ${branch}`);
     console.log(`Issue Key: ${issueKey || 'None found'}`);
     console.log('---');
-  });
+  }
 }
 
-testIssueExtraction(); 
+testIssueExtraction();

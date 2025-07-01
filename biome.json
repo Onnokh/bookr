@@ -16,6 +16,9 @@
       "style": {
         "useConst": "error",
         "noVar": "error"
+      },
+      "complexity": {
+        "useLiteralKeys": "off"
       }
     }
   },
@@ -28,21 +31,17 @@
   "javascript": {
     "formatter": {
       "quoteStyle": "single",
-      "trailingComma": "es5",
+      "trailingCommas": "es5",
       "semicolons": "always"
     }
   },
   "files": {
     "ignoreUnknown": false,
-    "ignore": [
-      "node_modules/**",
-      "dist/**",
-      "*.min.js"
-    ]
+    "ignore": ["node_modules/**", "dist/**", "*.min.js"]
   },
   "vcs": {
     "enabled": true,
     "clientKind": "git",
     "useIgnoreFile": true
   }
-} 
+}

@@ -1,7 +1,7 @@
-import { readFileSync } from 'fs';
-import { execSync } from 'child_process';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { execSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -26,12 +26,12 @@ function getPackageVersion(): string {
 function getGitCommitHash(): string | null {
   try {
     const cwd = join(__dirname, '..', '..');
-    const commitHash = execSync('git rev-parse --short HEAD', { 
+    const commitHash = execSync('git rev-parse --short HEAD', {
       encoding: 'utf-8',
-      cwd
+      cwd,
     }).trim();
     return commitHash;
-  } catch (error) {
+  } catch (_error) {
     return null;
   }
 }
@@ -39,12 +39,12 @@ function getGitCommitHash(): string | null {
 function getGitBranch(): string | null {
   try {
     const cwd = join(__dirname, '..', '..');
-    const branch = execSync('git branch --show-current', { 
+    const branch = execSync('git branch --show-current', {
       encoding: 'utf-8',
-      cwd
+      cwd,
     }).trim();
     return branch;
-  } catch (error) {
+  } catch (_error) {
     return null;
   }
 }
@@ -52,12 +52,12 @@ function getGitBranch(): string | null {
 function isDirty(): boolean {
   try {
     const cwd = join(__dirname, '..', '..');
-    const status = execSync('git status --porcelain', { 
+    const status = execSync('git status --porcelain', {
       encoding: 'utf-8',
-      cwd
+      cwd,
     }).trim();
     return status.length > 0;
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
 }
@@ -67,21 +67,21 @@ export function getVersion(): string {
   const commitHash = getGitCommitHash();
   const branch = getGitBranch();
   const dirty = isDirty();
-  
+
   if (!commitHash) {
     return version;
   }
-  
+
   let versionString = `${version}-${commitHash}`;
-  
+
   if (branch && branch !== 'main' && branch !== 'master') {
     versionString += `-${branch}`;
   }
-  
+
   if (dirty) {
     versionString += '-dirty';
   }
-  
+
   return versionString;
 }
 
@@ -95,6 +95,6 @@ export function getFullVersionInfo(): {
     version: getPackageVersion(),
     commitHash: getGitCommitHash(),
     branch: getGitBranch(),
-    dirty: isDirty()
+    dirty: isDirty(),
   };
-} 
+}

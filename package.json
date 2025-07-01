@@ -7,10 +7,7 @@
   "bin": {
     "bookr": "dist/cli.js"
   },
-  "files": [
-    "dist/**/*",
-    "README.md"
-  ],
+  "files": ["dist/**/*", "README.md"],
   "scripts": {
     "dev": "tsx watch src/cli.ts",
     "build": "tsc",
@@ -19,7 +16,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "test-jira": "tsx src/scripts/test-jira-connection.ts",
     "test-worklog": "tsx src/scripts/test-worklog.ts",
-    "list-issues": "tsx src/scripts/test-list-jira-issues.ts",
+    "test-list-issues": "tsx src/scripts/test-list-jira-issues.ts",
     "init": "tsx src/commands/init.ts",
     "lint": "biome lint .",
     "format": "biome format . --write",

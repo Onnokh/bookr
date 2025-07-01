@@ -28,17 +28,19 @@ export interface JiraWorklog {
   id?: string;
   timeSpent: string;
   timeSpentSeconds?: number;
-  comment?: string | {
-    content: Array<{
-      content: Array<{
-        text: string;
+  comment?:
+    | string
+    | {
+        content: Array<{
+          content: Array<{
+            text: string;
+            type: string;
+          }>;
+          type: string;
+        }>;
         type: string;
-      }>;
-      type: string;
-    }>;
-    type: string;
-    version: number;
-  };
+        version: number;
+      };
   started?: string;
   author?: {
     name: string;
@@ -69,4 +71,4 @@ export interface JiraSprint {
   startDate?: string;
   endDate?: string;
   goal?: string;
-} 
+}

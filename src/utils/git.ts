@@ -1,4 +1,4 @@
-import { execSync } from 'child_process';
+import { execSync } from 'node:child_process';
 
 /**
  * Get the current Git branch name
@@ -6,21 +6,15 @@ import { execSync } from 'child_process';
 export function getCurrentBranch(): string {
   try {
     // Try the modern Git command first
-    return execSync('git branch --show-current', { 
+    return execSync('git branch --show-current', {
       encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe'],
     }).trim();
-  } catch (error) {
-    try {
-      // Fallback to older Git command
-      return execSync('git rev-parse --abbrev-ref HEAD', { 
-        encoding: 'utf8',
-        stdio: ['pipe', 'pipe', 'pipe']
-      }).trim();
-    } catch (secondError) {
-      // Final fallback to environment variable
-      return process.env['GIT_BRANCH'] || 'unknown';
-    }
+  } catch (_error) {
+    return execSync('git rev-parse --abbrev-ref HEAD', {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    }).trim();
   }
 }
 
@@ -29,12 +23,12 @@ export function getCurrentBranch(): string {
  */
 export function isGitRepository(): boolean {
   try {
-    execSync('git rev-parse --git-dir', { 
+    execSync('git rev-parse --git-dir', {
       encoding: 'utf8',
-      stdio: ['pipe', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe'],
     });
     return true;
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
 }
@@ -50,15 +44,15 @@ export function extractJiraIssueKey(branchName: string): string | null {
   const patterns = [
     /(?:feature|bugfix|hotfix|release)\/([A-Za-z0-9]+-\d+)(?:\/.*)?/i,
     /([A-Za-z0-9]+-\d+)(?:\/.*)?/,
-    /(?:issue|ticket)\/([A-Za-z0-9]+-\d+)(?:\/.*)?/i
+    /(?:issue|ticket)\/([A-Za-z0-9]+-\d+)(?:\/.*)?/i,
   ];
 
   for (const pattern of patterns) {
     const match = branchName.match(pattern);
-    if (match && match[1]) {
+    if (match?.[1]) {
       return match[1].toUpperCase(); // Convert to uppercase for JIRA
     }
   }
 
   return null;
-} 
+}

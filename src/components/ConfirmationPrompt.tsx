@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
 import { Box, Text, useInput } from 'ink';
-import { JiraIssue } from '../types/jira.js';
+import type React from 'react';
+import { useState } from 'react';
+import type { JiraIssue } from '../types/jira.js';
 import { formatTimeForDisplay } from '../utils/time-parser.js';
 
 interface ConfirmationPromptProps {
@@ -16,13 +17,13 @@ export const ConfirmationPrompt: React.FC<ConfirmationPromptProps> = ({
   timeSpent,
   description,
   onConfirm,
-  onCancel
+  onCancel,
 }) => {
   const [selectedOption, setSelectedOption] = useState<'confirm' | 'cancel'>('confirm');
 
   useInput((input, key) => {
     if (key.upArrow || key.downArrow) {
-      setSelectedOption(prev => prev === 'confirm' ? 'cancel' : 'confirm');
+      setSelectedOption((prev) => (prev === 'confirm' ? 'cancel' : 'confirm'));
     } else if (key.return) {
       if (selectedOption === 'confirm') {
         onConfirm();
@@ -43,7 +44,7 @@ export const ConfirmationPrompt: React.FC<ConfirmationPromptProps> = ({
       <Text color="cyan" bold>
         📋 Confirm Worklog Entry
       </Text>
-      
+
       <Box marginTop={1} flexDirection="column">
         <Text>
           <Text color="yellow">Issue:</Text> {issue.key} - {issue.fields.summary}
@@ -65,10 +66,8 @@ export const ConfirmationPrompt: React.FC<ConfirmationPromptProps> = ({
       </Box>
 
       <Box marginTop={2} flexDirection="column">
-        <Text color="gray">
-          Use ↑↓ arrows to select, Enter to confirm, or type y/n
-        </Text>
-        
+        <Text color="gray">Use ↑↓ arrows to select, Enter to confirm, or type y/n</Text>
+
         <Box marginTop={1}>
           <Text color={selectedOption === 'confirm' ? 'green' : 'gray'}>
             {selectedOption === 'confirm' ? '► ' : '  '}
@@ -77,14 +76,12 @@ export const ConfirmationPrompt: React.FC<ConfirmationPromptProps> = ({
             ✅ Confirm and create worklog
           </Text>
         </Box>
-        
+
         <Box>
           <Text color={selectedOption === 'cancel' ? 'red' : 'gray'}>
             {selectedOption === 'cancel' ? '► ' : '  '}
           </Text>
-          <Text color={selectedOption === 'cancel' ? 'red' : 'gray'}>
-            ❌ Cancel
-          </Text>
+          <Text color={selectedOption === 'cancel' ? 'red' : 'gray'}>❌ Cancel</Text>
         </Box>
       </Box>
     </Box>

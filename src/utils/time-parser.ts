@@ -4,22 +4,22 @@
  */
 export function parseTimeToSeconds(timeString: string): number {
   const normalized = timeString.toLowerCase().trim();
-  
+
   // Handle decimal hours: "2.5h", "1.25h"
   const decimalHoursMatch = normalized.match(/^(\d+(?:\.\d+)?)h?$/);
-  if (decimalHoursMatch && decimalHoursMatch[1]) {
-    const hours = parseFloat(decimalHoursMatch[1]);
+  if (decimalHoursMatch?.[1]) {
+    const hours = Number.parseFloat(decimalHoursMatch[1]);
     return Math.round(hours * 3600);
   }
-  
+
   // Handle hours and minutes: "2h30m", "1h15m", "2h", "30m"
   const hoursMatch = normalized.match(/(\d+)h/);
   const minutesMatch = normalized.match(/(\d+)m/);
-  
-  const hours = hoursMatch && hoursMatch[1] ? parseInt(hoursMatch[1], 10) : 0;
-  const minutes = minutesMatch && minutesMatch[1] ? parseInt(minutesMatch[1], 10) : 0;
-  
-  return (hours * 3600) + (minutes * 60);
+
+  const hours = hoursMatch?.[1] ? Number.parseInt(hoursMatch[1], 10) : 0;
+  const minutes = minutesMatch?.[1] ? Number.parseInt(minutesMatch[1], 10) : 0;
+
+  return hours * 3600 + minutes * 60;
 }
 
 /**
@@ -28,16 +28,17 @@ export function parseTimeToSeconds(timeString: string): number {
 export function secondsToJiraFormat(seconds: number): string {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
-  
+
   if (hours > 0 && minutes > 0) {
     return `${hours}h ${minutes}m`;
-  } else if (hours > 0) {
-    return `${hours}h`;
-  } else if (minutes > 0) {
-    return `${minutes}m`;
-  } else {
-    return '0m';
   }
+  if (hours > 0) {
+    return `${hours}h`;
+  }
+  if (minutes > 0) {
+    return `${minutes}m`;
+  }
+  return '0m';
 }
 
 /**
@@ -45,27 +46,27 @@ export function secondsToJiraFormat(seconds: number): string {
  */
 export function isValidTimeFormat(timeString: string): boolean {
   const normalized = timeString.toLowerCase().trim();
-  
+
   // Check for decimal hours
   if (/^\d+(?:\.\d+)?h?$/.test(normalized)) {
     return true;
   }
-  
+
   // Check for hours and minutes
   if (/^\d+h\d+m$/.test(normalized)) {
     return true;
   }
-  
+
   // Check for just hours
   if (/^\d+h$/.test(normalized)) {
     return true;
   }
-  
+
   // Check for just minutes
   if (/^\d+m$/.test(normalized)) {
     return true;
   }
-  
+
   return false;
 }
 
@@ -76,16 +77,17 @@ export function formatTimeForDisplay(timeString: string): string {
   const seconds = parseTimeToSeconds(timeString);
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
-  
+
   if (hours > 0 && minutes > 0) {
     return `${hours} hour${hours !== 1 ? 's' : ''} and ${minutes} minute${minutes !== 1 ? 's' : ''}`;
-  } else if (hours > 0) {
-    return `${hours} hour${hours !== 1 ? 's' : ''}`;
-  } else if (minutes > 0) {
-    return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
-  } else {
-    return '0 minutes';
   }
+  if (hours > 0) {
+    return `${hours} hour${hours !== 1 ? 's' : ''}`;
+  }
+  if (minutes > 0) {
+    return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+  }
+  return '0 minutes';
 }
 
 export function formatJiraDate(date: Date): string {
@@ -103,4 +105,4 @@ export function formatJiraDate(date: Date): string {
   const tzHH = pad(Math.floor(Math.abs(tzOffset) / 60));
   const tzmm = pad(Math.abs(tzOffset) % 60);
   return `${yyyy}-${MM}-${dd}T${HH}:${mm}:${ss}.${SSS}${sign}${tzHH}${tzmm}`;
-} 
+}

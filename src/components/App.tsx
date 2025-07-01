@@ -1,9 +1,16 @@
-import React, { useEffect, useState } from 'react';
 import { Box, Text } from 'ink';
+import type React from 'react';
+import { useEffect, useState } from 'react';
 import { createJiraClientFromEnv } from '../api/jira-client.js';
-import { JiraIssue } from '../types/jira.js';
-import { getCurrentBranch, extractJiraIssueKey, isGitRepository } from '../utils/git.js';
-import { parseTimeToSeconds, isValidTimeFormat, formatTimeForDisplay, secondsToJiraFormat, formatJiraDate } from '../utils/time-parser.js';
+import type { JiraIssue } from '../types/jira.js';
+import { extractJiraIssueKey, getCurrentBranch, isGitRepository } from '../utils/git.js';
+import {
+  formatJiraDate,
+  formatTimeForDisplay,
+  isValidTimeFormat,
+  parseTimeToSeconds,
+  secondsToJiraFormat,
+} from '../utils/time-parser.js';
 import { ConfirmationPrompt } from './ConfirmationPrompt.js';
 
 interface AppProps {
@@ -15,7 +22,15 @@ interface AppProps {
   } & Record<string, unknown>;
 }
 
-type AppState = 'loading' | 'error' | 'no-issue' | 'invalid-time' | 'confirm' | 'creating' | 'success' | 'cancelled';
+type AppState =
+  | 'loading'
+  | 'error'
+  | 'no-issue'
+  | 'invalid-time'
+  | 'confirm'
+  | 'creating'
+  | 'success'
+  | 'cancelled';
 
 export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
   const [currentBranch, setCurrentBranch] = useState<string>('Loading...');
@@ -47,7 +62,9 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
 
         // Validate time format
         if (!isValidTimeFormat(flags.time)) {
-          setError(`Invalid time format: "${flags.time}". Use formats like "2h30m", "1h15m", "45m", "2.5h"`);
+          setError(
+            `Invalid time format: "${flags.time}". Use formats like "2h30m", "1h15m", "45m", "2.5h"`
+          );
           setAppState('invalid-time');
           return;
         }
@@ -56,7 +73,7 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
 
         // Try to extract JIRA issue key from branch name
         const issueKey = extractJiraIssueKey(branch);
-        
+
         if (!issueKey) {
           setAppState('no-issue');
           return;
@@ -68,7 +85,9 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
           setJiraIssue(issue);
           setAppState('confirm');
         } catch (jiraError) {
-          setError(`Could not fetch JIRA issue ${issueKey}: ${jiraError instanceof Error ? jiraError.message : 'Unknown error'}`);
+          setError(
+            `Could not fetch JIRA issue ${issueKey}: ${jiraError instanceof Error ? jiraError.message : 'Unknown error'}`
+          );
           setAppState('error');
         }
       } catch (err) {
@@ -82,22 +101,24 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
 
   const handleConfirm = async () => {
     if (!jiraIssue || !timeSpent) return;
-    
+
     setAppState('creating');
-    
+
     try {
       const client = createJiraClientFromEnv();
       const timeSpentSeconds = parseTimeToSeconds(timeSpent);
-      
+
       await client.addWorklog(jiraIssue.key, {
         timeSpent: secondsToJiraFormat(timeSpentSeconds),
-        comment: flags.description || `Work logged via Bookr CLI`,
-        started: formatJiraDate(new Date())
+        comment: flags.description || 'Work logged via Bookr CLI',
+        started: formatJiraDate(new Date()),
       });
-      
+
       setAppState('success');
     } catch (error) {
-      setError(`Failed to create worklog: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      setError(
+        `Failed to create worklog: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
       setAppState('error');
     }
   };
@@ -127,9 +148,7 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
         <Text color="green" bold>
           🧪 Bookr - Tempo CLI Tool
         </Text>
-        <Text color="red">
-          ❌ Error: {error}
-        </Text>
+        <Text color="red">❌ Error: {error}</Text>
       </Box>
     );
   }
@@ -141,18 +160,16 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
         <Text color="green" bold>
           🧪 Bookr - Tempo CLI Tool
         </Text>
-        <Text color="red">
-          ❌ {error}
-        </Text>
+        <Text color="red">❌ {error}</Text>
         <Box marginTop={1}>
           <Text color="yellow">Valid time formats:</Text>
         </Box>
         <Box marginTop={1} flexDirection="column">
-          <Text>  • 2h30m (2 hours 30 minutes)</Text>
-          <Text>  • 1h15m (1 hour 15 minutes)</Text>
-          <Text>  • 45m (45 minutes)</Text>
-          <Text>  • 2.5h (2.5 hours)</Text>
-          <Text>  • 90m (90 minutes)</Text>
+          <Text> • 2h30m (2 hours 30 minutes)</Text>
+          <Text> • 1h15m (1 hour 15 minutes)</Text>
+          <Text> • 45m (45 minutes)</Text>
+          <Text> • 2.5h (2.5 hours)</Text>
+          <Text> • 90m (90 minutes)</Text>
         </Box>
       </Box>
     );
@@ -165,37 +182,27 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
         <Text color="green" bold>
           🧪 Bookr - Tempo CLI Tool
         </Text>
-        <Text>
-          Welcome to Bookr! A CLI tool to book time in Jira using Tempo.
-        </Text>
-        
+        <Text>Welcome to Bookr! A CLI tool to book time in Jira using Tempo.</Text>
+
         <Box marginTop={1}>
-          <Text color="yellow">
-            Current branch: {currentBranch}
-          </Text>
+          <Text color="yellow">Current branch: {currentBranch}</Text>
         </Box>
 
         <Box marginTop={1}>
           <Text color="blue">
-            ⏱️  Time to log: {formatTimeForDisplay(timeSpent)} ({timeSpent})
+            ⏱️ Time to log: {formatTimeForDisplay(timeSpent)} ({timeSpent})
           </Text>
         </Box>
-        
+
         {flags.description && (
           <Box marginTop={1}>
-            <Text color="blue">
-              📝 Description: {flags.description}
-            </Text>
+            <Text color="blue">📝 Description: {flags.description}</Text>
           </Box>
         )}
 
         <Box marginTop={1}>
-          <Text color="yellow">
-            ⚠️  No JIRA issue key found in branch name "{currentBranch}"
-          </Text>
-          <Text color="gray">
-            Expected format: feature/PROJ-123, bugfix/PROJ-456, etc.
-          </Text>
+          <Text color="yellow">⚠️ No JIRA issue key found in branch name "{currentBranch}"</Text>
+          <Text color="gray">Expected format: feature/PROJ-123, bugfix/PROJ-456, etc.</Text>
         </Box>
       </Box>
     );
@@ -230,7 +237,7 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
     // Construct JIRA issue URL
     const client = createJiraClientFromEnv();
     const issueUrl = `${client.getBaseUrl()}/browse/${jiraIssue.key}`;
-    
+
     return (
       <Box flexDirection="column" padding={1}>
         <Box marginTop={1}>
@@ -265,9 +272,7 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
     return (
       <Box flexDirection="column" padding={1}>
         <Box marginTop={1}>
-          <Text color="yellow">
-            ❌ Worklog creation cancelled
-          </Text>
+          <Text color="yellow">❌ Worklog creation cancelled</Text>
         </Box>
       </Box>
     );
@@ -279,4 +284,4 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
       <Text>Unknown state</Text>
     </Box>
   );
-}; 
+};

@@ -4,13 +4,22 @@ import { secondsToJiraFormat } from '../utils/time-parser.js';
 /**
  * Extract text from JIRA comment (handles both string and structured formats)
  */
-function extractCommentText(comment: string | { content: Array<{ content: Array<{ text: string; type: string }>; type: string }>; type: string; version: number } | undefined): string {
+function extractCommentText(
+  comment:
+    | string
+    | {
+        content: Array<{ content: Array<{ text: string; type: string }>; type: string }>;
+        type: string;
+        version: number;
+      }
+    | undefined
+): string {
   if (!comment) return 'No comment';
-  
+
   if (typeof comment === 'string') {
     return comment;
   }
-  
+
   // Handle structured comment format
   if (comment.content && Array.isArray(comment.content)) {
     const texts: string[] = [];
@@ -25,7 +34,7 @@ function extractCommentText(comment: string | { content: Array<{ content: Array<
     }
     return texts.join(' ').trim() || 'No comment';
   }
-  
+
   return 'No comment';
 }
 
@@ -51,7 +60,7 @@ export async function showTodayWorklogs() {
       const timeSpent = worklog.timeSpentSeconds || 0;
       totalSeconds += timeSpent;
       const timeDisplay = secondsToJiraFormat(timeSpent);
-    //   const started = worklog.started ? new Date(worklog.started).toLocaleTimeString() : 'N/A';
+      //   const started = worklog.started ? new Date(worklog.started).toLocaleTimeString() : 'N/A';
       const comment = extractCommentText(worklog.comment);
       console.log(`${issue.key.padEnd(12)} | ${issue.fields.summary}`);
       if (comment && comment !== 'No comment') {
@@ -64,7 +73,7 @@ export async function showTodayWorklogs() {
     const totalHours = (totalSeconds / 3600).toFixed(2);
     console.log(`📊 Total time today: ${totalTime} (${totalHours} hours)`);
     // Show some stats
-    const uniqueIssues = new Set(todayWorklogs.map(w => w.issue.key)).size;
+    const uniqueIssues = new Set(todayWorklogs.map((w) => w.issue.key)).size;
     console.log(`📝 Worklog entries: ${todayWorklogs.length}`);
     console.log(`🎯 Issues worked on: ${uniqueIssues}`);
   } catch (error) {
@@ -78,4 +87,4 @@ export default showTodayWorklogs;
 // For backward compatibility when running directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   showTodayWorklogs().catch(console.error);
-} 
+}

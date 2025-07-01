@@ -1,10 +1,9 @@
 #!/usr/bin/env node
 
-import React from 'react';
 import { render } from 'ink';
 import meow from 'meow';
+import React from 'react';
 import { App } from './components/App.js';
-import { getVersion, getFullVersionInfo } from './utils/version.js';
 
 async function main() {
   const cli = meow(
@@ -36,12 +35,7 @@ async function main() {
     `,
     {
       importMeta: import.meta,
-      version: false,
       flags: {
-        dev: {
-          type: 'boolean',
-          shortFlag: 'd',
-        },
         message: {
           type: 'string',
           shortFlag: 'm',
@@ -50,32 +44,17 @@ async function main() {
           type: 'string',
           shortFlag: 'd',
         },
+        version: {
+          type: 'boolean',
+          shortFlag: 'v',
+        },
       },
     }
   );
 
   const { input, flags } = cli;
 
-  // Handle version flag (check both --version and --ver)
-  if (flags.dev || process.argv.includes('--dev')) {
-    const versionInfo = getFullVersionInfo();
-    console.log(getVersion());
-    
-    // Show additional info in development
-    if (versionInfo.commitHash) {
-      console.log(`Commit: ${versionInfo.commitHash}`);
-      if (versionInfo.branch) {
-        console.log(`Branch: ${versionInfo.branch}`);
-      }
-      if (versionInfo.dirty) {
-        console.log('Status: dirty (uncommitted changes)');
-      }
-    }
-    
-    process.exit(0);
-  }
-
-    // Handle "today" command
+  // Handle "today" command
   if (input[0] === 'today') {
     const command = await import('./commands/today.js');
     await command.default();
@@ -99,14 +78,16 @@ async function main() {
   // Extract time from first positional argument
   const time = input[0];
 
-  render(React.createElement(App, { 
-    input, 
-    flags: { 
-      ...flags, 
-      time,
-      description: flags.message
-    } 
-  }));
+  render(
+    React.createElement(App, {
+      input,
+      flags: {
+        ...flags,
+        time,
+        description: flags.message,
+      },
+    })
+  );
 }
 
-main().catch(console.error); 
+main().catch(console.error);
