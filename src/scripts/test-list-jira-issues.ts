@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { createJiraClientFromEnv } from './api/jira-client.js';
+import { createJiraClientFromEnv } from '../api/jira-client.js';
 
 async function listRecentIssues() {
   console.log('🔍 Fetching your recent JIRA issues...\n');
