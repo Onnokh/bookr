@@ -28,6 +28,13 @@ async function promptForConfig() {
       mask: '*',
       validate: (input: string) => input.length > 0 || 'API token cannot be empty.',
     },
+    {
+      type: 'password' as const,
+      name: 'TEMPO_API_TOKEN',
+      message: 'Tempo API Token (from https://id.tempo.io/manage/api-tokens) [optional]:',
+      mask: '*',
+      validate: (_input: string) => true, // Optional
+    },
   ];
   return await inquirer.prompt(questions);
 }

@@ -161,19 +161,6 @@ export function getTodaysStoredWorklogs(): StoredWorklog[] {
   });
 }
 
-/**
- * Get recent stored worklogs (last 10 days)
- */
-export function getRecentStoredWorklogs(days = 10): StoredWorklog[] {
-  const data = readStoredWorklogs();
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - days);
-
-  return data.worklogs.filter((worklog) => {
-    const worklogDate = new Date(worklog.started);
-    return worklogDate >= cutoffDate;
-  });
-}
 
 /**
  * Clean up old worklogs (older than 30 days)

@@ -260,7 +260,7 @@ export class JiraClient {
   }
 
   /**
-   * Get today's worklogs for the current user
+   * Get today's worklogs for all authors
    */
   async getTodayWorklogs(): Promise<Array<{ issue: JiraIssue; worklog: JiraWorklog }>> {
     const today = new Date();
@@ -271,8 +271,8 @@ export class JiraClient {
     const startDate = startOfDay.toISOString().split('T')[0];
     const endDate = endOfDay.toISOString().split('T')[0];
 
-    // Search for issues with worklogs created today by current user
-    const jql = `worklogDate >= "${startDate}" AND worklogDate <= "${endDate}" AND worklogAuthor = currentUser() ORDER BY updated DESC`;
+    // Search for issues with worklogs created today (any author)
+    const jql = `worklogDate >= "${startDate}" AND worklogDate <= "${endDate}" ORDER BY updated DESC`;
 
     try {
       const result = await this.searchIssues(jql, 50);

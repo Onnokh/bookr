@@ -1,7 +1,7 @@
 import { type JiraClient, createClient } from '../api/jira-client.js';
+import { createTempoClient } from '../api/tempo-client.js';
 import { secondsToJiraFormat } from '../utils/time-parser.js';
 import {
-  getRecentStoredWorklogs,
   getStoredWorklogById,
   removeStoredWorklog,
 } from '../utils/worklog-storage.js';
@@ -18,61 +18,80 @@ interface JiraRichTextContent {
   version?: number;
 }
 
+// Helper to limit concurrency for parallel fetches
+async function parallelMapLimit<T, R>(arr: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const ret: R[] = [];
+  let i = 0;
+  async function next() {
+    if (i >= arr.length) return;
+    const idx = i++;
+    const item = arr[idx];
+    ret[idx] = item !== undefined ? await fn(item) : undefined as any;
+    await next();
+  }
+  await Promise.all(Array(Math.min(limit, arr.length)).fill(0).map(next));
+  return ret;
+}
+
 /**
- * Show interactive selection of recent worklogs to undo
+ * Show interactive selection of recent worklogs to undo (Tempo-first)
  */
 export async function showUndoSelection() {
   try {
     const client = createClient();
+    const tempoClient = createTempoClient();
+    const user = await client.getCurrentUser();
+    const todayISO = new Date().toISOString().slice(0, 10);
+    const tempoWorklogsResponse = await tempoClient.getWorklogsForUser(user.accountId, todayISO, todayISO);
+    const tempoWorklogs = (tempoWorklogsResponse && typeof tempoWorklogsResponse === 'object' && Array.isArray((tempoWorklogsResponse as any).results))
+      ? (tempoWorklogsResponse as any).results
+      : Array.isArray(tempoWorklogsResponse) ? tempoWorklogsResponse : [];
 
-    // Test connection
-    const isConnected = await client.testConnection();
-    if (!isConnected) {
-      console.log('❌ Failed to connect to JIRA');
-      return;
-    }
+    // Optionally, you could also fetch Jira worklogs if you want to support undo for both sources
+    // For now, we focus on Tempo worklogs
 
-    // Get all recent worklogs from JIRA (not just locally stored ones)
-    const todayWorklogs = await client.getTodayWorklogs();
-
-    if (todayWorklogs.length === 0) {
+    if (!tempoWorklogs.length) {
       console.log('📭 No worklogs found for today.');
       console.log('💡 You can undo any worklog by its ID: bookr undo <WORKLOG_ID>');
       return;
     }
 
-    // Get stored worklogs for showing which ones were created via bookr
-    const storedWorklogs = getRecentStoredWorklogs(7);
-    const storedWorklogMap = new Map(storedWorklogs.map((w) => [w.id, w]));
+    // Enrich with Jira issue info
+    const uniqueIssueIds = Array.from(new Set((tempoWorklogs as any[]).map((w: any) => w.issue?.id).filter(Boolean)));
+    const issueMap = new Map();
+    await parallelMapLimit(uniqueIssueIds, 5, async (id) => {
+      try {
+        const issue = await client.getIssue(String(id));
+        issueMap.set(id, { key: issue.key, summary: issue.fields.summary });
+      } catch {
+        // If not found, skip
+      }
+    });
 
-    console.log("🔄 Today's worklogs that can be undone:");
+    // Table header
     console.log('─'.repeat(120));
     console.log(
       `${'ID'.padEnd(17)} | ${'Issue'.padEnd(12)} | ${'Time'.padEnd(8)} | ${'Summary'.padEnd(50)} | Source`
     );
     console.log('─'.repeat(120));
-
-    for (const { issue, worklog } of todayWorklogs) {
-      const worklogId = worklog.id || 'N/A';
-      const timeDisplay = secondsToJiraFormat(worklog.timeSpentSeconds || 0);
-      const summary =
-        issue.fields.summary.length > 48
-          ? `${issue.fields.summary.substring(0, 45)}...`
-          : issue.fields.summary;
-
-      const isFromBookr = storedWorklogMap.has(worklogId);
-      const source = isFromBookr ? 'bookr' : 'other';
-
+    for (const worklog of tempoWorklogs as any[]) {
+      const timeSpentSeconds = worklog.timeSpentSeconds || worklog.timeSpent || 0;
+      const timeDisplay = secondsToJiraFormat(timeSpentSeconds);
+      const issueId = worklog.issue?.id || '';
+      const issueInfo = issueMap.get(issueId) || {};
+      const issueKey = issueInfo.key || '';
+      const summary = (issueInfo.summary || worklog.description || '').slice(0, 50);
+      const worklogId = String(worklog.tempoWorklogId || worklog.id || '');
+      const source = worklog.tempoWorklogId ? 'tempo' : 'jira';
       console.log(
-        `${worklogId.padEnd(17)} | ${issue.key.padEnd(12)} | ${timeDisplay.padEnd(8)} | ${summary.padEnd(50)} | ${source}`
+        `${worklogId.padEnd(17)} | ${issueKey.padEnd(12)} | ${timeDisplay.padEnd(8)} | ${summary.padEnd(50)} | ${source}`
       );
     }
-
     console.log('─'.repeat(120));
     console.log('');
     console.log('💡 To undo a specific worklog, run: bookr undo <WORKLOG_ID>');
     console.log('💡 You can undo ANY worklog that you have permission to delete');
-    console.log('⚠️  Warning: This will permanently delete the worklog from JIRA!');
+    console.log('⚠️  Warning: This will permanently delete the worklog from Tempo!');
   } catch (error) {
     console.error('❌ Error:', error instanceof Error ? error.message : error);
   }
@@ -142,7 +161,7 @@ export async function undoWorklogById(worklogId: string) {
       return;
     }
 
-    console.log(`� Looking for worklog ${worklogId}...`);
+    console.log(`🔄 Looking for worklog ${worklogId}...`);
 
     // Try to find worklog details
     const worklogDetails = await findWorklogDetails(client, worklogId);

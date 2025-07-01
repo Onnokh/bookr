@@ -1,60 +1,75 @@
 import { createClient } from '../api/jira-client.js';
-import { extractCommentText } from '../utils/jira.js';
 import { secondsToJiraFormat } from '../utils/time-parser.js';
-import { getTodaysStoredWorklogs } from '../utils/worklog-storage.js';
+import { createTempoClient } from '../api/tempo-client.js';
+
+// Helper to limit concurrency for parallel fetches
+async function parallelMapLimit<T, R>(arr: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const ret: R[] = [];
+  let i = 0;
+  async function next() {
+    if (i >= arr.length) return;
+    const idx = i++;
+    const item = arr[idx];
+    ret[idx] = item !== undefined ? await fn(item) : undefined as any;
+    await next();
+  }
+  await Promise.all(Array(Math.min(limit, arr.length)).fill(0).map(next));
+  return ret;
+}
 
 export async function showTodayWorklogs() {
   try {
     const client = createClient();
-    // Test connection
-    const isConnected = await client.testConnection();
-    if (!isConnected) {
-      console.log('❌ Failed to connect to JIRA');
-      return;
-    }
-    // Get today's worklogs
-    const todayWorklogs = await client.getTodayWorklogs();
-    if (todayWorklogs.length === 0) {
+    const tempoClient = createTempoClient();
+    const user = await client.getCurrentUser();
+    const todayISO = new Date().toISOString().slice(0, 10);
+    const tempoWorklogsResponse = await tempoClient.getWorklogsForUser(user.accountId, todayISO, todayISO);
+    const tempoWorklogs = (tempoWorklogsResponse && typeof tempoWorklogsResponse === 'object' && Array.isArray((tempoWorklogsResponse as any).results))
+      ? (tempoWorklogsResponse as any).results
+      : Array.isArray(tempoWorklogsResponse) ? tempoWorklogsResponse : [];
+
+    if (!tempoWorklogs.length) {
       console.log('📭 No worklogs found for today.');
       return;
     }
-    // Get stored worklogs for showing IDs
-    const storedWorklogs = getTodaysStoredWorklogs();
-    const storedWorklogMap = new Map(storedWorklogs.map((w) => [w.id, w]));
 
-    // Calculate total time and display worklogs
-    let totalSeconds = 0;
+    // Collect unique issue IDs
+    const uniqueIssueIds = Array.from(new Set((tempoWorklogs as any[]).map((w: any) => w.issue?.id).filter(Boolean)));
+    // Fetch all issues in parallel (limit concurrency to 5)
+    const issueMap = new Map();
+    await parallelMapLimit(uniqueIssueIds, 5, async (id) => {
+      try {
+        const issue = await client.getIssue(String(id));
+        issueMap.set(id, { key: issue.key, summary: issue.fields.summary });
+      } catch {
+        // If not found, skip
+      }
+    });
+
+    // Table header
     console.log('─'.repeat(120));
     console.log(`${'ID'.padEnd(17)} | ${'Issue'.padEnd(12)} | ${'Time'.padEnd(8)} | Summary`);
     console.log('─'.repeat(120));
-
-    for (const { issue, worklog } of todayWorklogs) {
-      const timeSpent = worklog.timeSpentSeconds || 0;
-      totalSeconds += timeSpent;
-      const timeDisplay = secondsToJiraFormat(timeSpent);
-      const comment = extractCommentText(worklog.comment);
-
-      // Show worklog ID - all worklogs can be undone, but indicate source
-      const worklogId = worklog.id || 'N/A';
-      const isStoredWorklog = storedWorklogMap.has(worklogId);
-      const source = isStoredWorklog ? ' (bookr)' : '';
-
-      console.log(
-        `${(worklogId + source).padEnd(17)} | ${issue.key.padEnd(12)} | ${timeDisplay.padEnd(8)} | ${issue.fields.summary}`
-      );
-
-      if (comment && comment !== 'No comment') {
-        console.log(`${' '.repeat(42)} └─ ${comment}`);
-      }
+    let totalSeconds = 0;
+    const uniqueIssues = new Set<string>();
+    for (const worklog of tempoWorklogs as any[]) {
+      const timeSpentSeconds = worklog.timeSpentSeconds || worklog.timeSpent || 0;
+      totalSeconds += timeSpentSeconds;
+      const timeDisplay = secondsToJiraFormat(timeSpentSeconds);
+      const issueId = worklog.issue?.id || '';
+      const issueInfo = issueMap.get(issueId) || {};
+      const issueKey = issueInfo.key || '';
+      uniqueIssues.add(String(issueKey));
+      const summary = issueInfo.summary || worklog.description || '';
+      const worklogId = worklog.tempoWorklogId ? String(worklog.tempoWorklogId) : String(worklog.id || '');
+      console.log(`${worklogId.padEnd(17)} | ${issueKey.padEnd(12)} | ${timeDisplay.padEnd(8)} | ${summary}`);
     }
     console.log('─'.repeat(120));
     const totalTime = secondsToJiraFormat(totalSeconds);
     const totalHours = (totalSeconds / 3600).toFixed(2);
     console.log(`📊 Total time today: ${totalTime} (${totalHours} hours)`);
-    // Show some stats
-    const uniqueIssues = new Set(todayWorklogs.map((w) => w.issue.key)).size;
-    console.log(`📝 Worklog entries: ${todayWorklogs.length}`);
-    console.log(`🎯 Issues worked on: ${uniqueIssues}`);
+    console.log(`📝 Worklog entries: ${tempoWorklogs.length}`);
+    console.log(`🎯 Issues worked on: ${uniqueIssues.size}`);
   } catch (error) {
     console.error('❌ Error:', error instanceof Error ? error.message : error);
   }
