@@ -16,6 +16,7 @@ import { ConfirmationPrompt } from './ConfirmationPrompt.js';
 interface AppProps {
   input: string[];
   flags: {
+    ticket?: string | undefined;
     time?: string | undefined;
     date?: string | undefined;
     description?: string | undefined;
@@ -42,16 +43,20 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
   useEffect(() => {
     async function initialize() {
       try {
-        // Check if we're in a Git repository
-        if (!isGitRepository()) {
-          setError('Not in a Git repository. Please run this command from a Git repository.');
+        // Check if we're in a Git repository (only required if no ticket provided)
+        if (!flags.ticket && !isGitRepository()) {
+          setError('Not in a Git repository and no ticket provided. Please either run from a Git repository or specify a ticket: bookr PROJ-123 2h30m');
           setAppState('error');
           return;
         }
 
-        // Get current Git branch
-        const branch = getCurrentBranch();
-        setCurrentBranch(branch);
+        // Get current Git branch (only if we need it)
+        if (!flags.ticket) {
+          const branch = getCurrentBranch();
+          setCurrentBranch(branch);
+        } else {
+          setCurrentBranch('N/A (ticket provided)');
+        }
 
         // Check if time was provided
         if (!flags.time) {
@@ -71,8 +76,17 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
 
         setTimeSpent(flags.time);
 
-        // Try to extract JIRA issue key from branch name
-        const issueKey = extractJiraIssueKey(branch);
+        // Use provided ticket or extract from branch name
+        let issueKey: string | null = null;
+        
+        if (flags.ticket) {
+          // Use explicitly provided ticket
+          issueKey = flags.ticket;
+        } else {
+          // Try to extract JIRA issue key from branch name
+          const branch = getCurrentBranch();
+          issueKey = extractJiraIssueKey(branch);
+        }
 
         if (!issueKey) {
           setAppState('no-issue');
@@ -97,7 +111,7 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
     }
 
     initialize();
-  }, [flags.time]);
+  }, [flags.time, flags.ticket]);
 
   const handleConfirm = async () => {
     if (!jiraIssue || !timeSpent) return;
@@ -131,12 +145,7 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
   if (appState === 'loading') {
     return (
       <Box flexDirection="column" padding={1}>
-        <Text color="green" bold>
-          🧪 Bookr - Tempo CLI Tool
-        </Text>
-        <Box marginTop={1}>
-          <Text>⏳ Loading...</Text>
-        </Box>
+        <Text>⏳ Loading...</Text>
       </Box>
     );
   }
@@ -145,9 +154,6 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
   if (appState === 'error') {
     return (
       <Box flexDirection="column" padding={1}>
-        <Text color="green" bold>
-          🧪 Bookr - Tempo CLI Tool
-        </Text>
         <Text color="red">❌ Error: {error}</Text>
       </Box>
     );
@@ -157,9 +163,6 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
   if (appState === 'invalid-time') {
     return (
       <Box flexDirection="column" padding={1}>
-        <Text color="green" bold>
-          🧪 Bookr - Tempo CLI Tool
-        </Text>
         <Text color="red">❌ {error}</Text>
         <Box marginTop={1}>
           <Text color="yellow">Valid time formats:</Text>
@@ -179,30 +182,17 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
   if (appState === 'no-issue') {
     return (
       <Box flexDirection="column" padding={1}>
-        <Text color="green" bold>
-          🧪 Bookr - Tempo CLI Tool
-        </Text>
-        <Text>Welcome to Bookr! A CLI tool to book time in Jira using Tempo.</Text>
-
-        <Box marginTop={1}>
-          <Text color="yellow">Current branch: {currentBranch}</Text>
-        </Box>
-
-        <Box marginTop={1}>
-          <Text color="blue">
-            ⏱️ Time to log: {formatTimeForDisplay(timeSpent)} ({timeSpent})
-          </Text>
-        </Box>
-
-        {flags.description && (
-          <Box marginTop={1}>
-            <Text color="blue">📝 Description: {flags.description}</Text>
-          </Box>
-        )}
-
-        <Box marginTop={1}>
-          <Text color="yellow">⚠️ No JIRA issue key found in branch name "{currentBranch}"</Text>
-          <Text color="gray">Expected format: feature/PROJ-123, bugfix/PROJ-456, etc.</Text>
+        <Box marginTop={1} flexDirection="column">
+          {flags.ticket ? (
+            <Text color="yellow">⚠️ No JIRA issue key provided</Text>
+          ) : (
+            <>
+              <Text color="yellow">⚠️ No JIRA issue key found in branch "{currentBranch}"</Text>
+              <Text color="gray">Expected format: feature/PROJ-123, bugfix/PROJ-456, etc.</Text>
+            </>
+          )}
+          <Text color="gray">Usage: bookr [TICKET] [TIME] -m "description"</Text>
+          <Text color="gray">Examples: bookr PROJ-123 2h30m -m "Fixed bug"</Text>
         </Box>
       </Box>
     );
@@ -225,9 +215,7 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
   if (appState === 'creating') {
     return (
       <Box flexDirection="column" padding={1}>
-        <Box marginTop={1}>
-          <Text>⏳ Creating worklog...</Text>
-        </Box>
+        <Text>⏳ Creating worklog...</Text>
       </Box>
     );
   }
@@ -240,11 +228,9 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
 
     return (
       <Box flexDirection="column" padding={1}>
-        <Box marginTop={1}>
-          <Text color="green" bold>
-            ✅ Worklog created!
-          </Text>
-        </Box>
+        <Text color="green" bold>
+          ✅ Worklog created!
+        </Text>
         <Box marginTop={1} flexDirection="column">
           <Text>
             <Text color="yellow">Issue:</Text> {jiraIssue.key} - {jiraIssue.fields.summary}
@@ -271,9 +257,7 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
   if (appState === 'cancelled') {
     return (
       <Box flexDirection="column" padding={1}>
-        <Box marginTop={1}>
-          <Text color="yellow">❌ Worklog creation cancelled</Text>
-        </Box>
+        <Text color="yellow">❌ Worklog creation cancelled</Text>
       </Box>
     );
   }

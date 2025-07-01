@@ -10,6 +10,7 @@ A terminal-based CLI tool to book time in Jira using the Tempo plugin by parsing
 - 🌐 **better-fetch** — Modern fetch API for HTTP requests
 - ⏱️ **Tempo API integration** — Log time directly to Jira tickets
 - 🌿 **Git integration** — Automatically parse Jira ticket IDs from branch names
+- 🎯 **Flexible ticket input** — Specify ticket explicitly or use Git branch
 
 ## 🚀 Quick Start
 
@@ -57,14 +58,25 @@ npm start
 ### Usage
 
 ```bash
-# Basic usage
-bookr
+# Basic usage (uses Git branch for ticket)
+bookr 2h15m
+
+# Log time with explicit ticket
+bookr PROJ-123 2h15m
 
 # Log time with description
 bookr 2h15m -m "Worked on CLI"
+bookr PROJ-123 2h15m -m "Fixed bug in login"
 
 # Log time for specific date
 bookr --date "2024-01-15" 4h
+bookr PROJ-456 --date "2024-01-15" 4h
+
+# View today's worklogs
+bookr today
+
+# View sprint overview
+bookr sprint
 
 # Get help
 bookr --help
