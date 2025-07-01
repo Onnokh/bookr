@@ -24,7 +24,7 @@ async function promptForConfig() {
     {
       type: 'password',
       name: 'JIRA_API_TOKEN',
-      message: 'JIRA API Token:',
+      message: 'JIRA API Token (from https://id.atlassian.com/manage-profile/security/api-tokens):',
       mask: '*',
       validate: (input: string) => input.length > 0 || 'API token cannot be empty.'
     }

@@ -15,6 +15,30 @@ A terminal-based CLI tool to book time in Jira using the Tempo plugin by parsing
 
 ### Installation
 
+#### Package Manager
+
+Using npm:
+```bash
+npm install bookr-cli
+```
+
+Using yarn:
+```bash
+yarn add bookr-cli
+```
+
+Using pnpm:
+```bash
+pnpm add bookr-cli
+```
+
+Using bun:
+```bash
+bun add bookr-cli
+```
+
+#### From Source
+
 ```bash
 # Clone the repository
 git clone <repository-url>
@@ -49,132 +73,6 @@ bookr --help
 bookr --version
 ```
 
-## 📁 Project Structure
-
-```
-bookr/
-├── src/                          # Source code
-│   ├── cli.ts                    # Main CLI entry point
-│   ├── components/               # Ink React components
-│   │   └── App.tsx              # Main application component
-│   ├── api/                     # API clients and integrations
-│   ├── utils/                   # Utility functions
-│   └── types/                   # TypeScript type definitions
-├── dist/                        # Compiled JavaScript output
-├── config/                      # Configuration files
-├── tests/                       # Test files
-├── docs/                        # Documentation
-├── package.json                 # Project dependencies and scripts
-├── tsconfig.json               # TypeScript configuration
-├── biome.json                  # Biome linting and formatting config
-├── DEVELOPMENT_PLAN.md         # Development roadmap and tasks
-└── README.md                   # This file
-```
-
-## 📄 File Descriptions
-
-### Core Files
-
-#### `src/cli.ts`
-- **Purpose**: Main entry point for the CLI application
-- **Features**: 
-  - Command-line argument parsing with `meow`
-  - Ink rendering setup
-  - CLI help text and usage examples
-  - Positional argument support for time logging
-- **Usage**: Handles `bookr 2h15m -m "description"` syntax
-
-#### `src/components/App.tsx`
-- **Purpose**: Main React component for the CLI interface
-- **Features**:
-  - Displays welcome message and current branch
-  - Shows time and description from CLI arguments
-  - Placeholder for Git branch parsing
-  - Ink-based terminal UI components
-
-### Configuration Files
-
-#### `package.json`
-- **Purpose**: Project metadata, dependencies, and scripts
-- **Key Features**:
-  - ES module configuration (`"type": "module"`)
-  - CLI binary configuration for global installation
-  - Development and build scripts
-  - Dependencies: Ink, React, better-fetch, meow
-  - Dev dependencies: TypeScript, Biome, tsx
-
-#### `tsconfig.json`
-- **Purpose**: TypeScript compiler configuration
-- **Features**:
-  - ES2020 target with Node16 module resolution
-  - Strict type checking enabled
-  - JSX support for React components
-  - Source maps and declaration files
-  - Path mapping for clean imports
-
-#### `biome.json`
-- **Purpose**: Biome configuration for linting and formatting
-- **Features**:
-  - Automatic import organization
-  - Strict linting rules
-  - Code formatting with 2-space indentation
-  - Git integration for ignored files
-
-### Documentation
-
-#### `DEVELOPMENT_PLAN.md`
-- **Purpose**: Comprehensive development roadmap
-- **Content**:
-  - 5-phase development plan with 20 detailed steps
-  - Project setup instructions
-  - Feature implementation roadmap
-  - Testing and deployment guidelines
-
-## 🛠️ Development
-
-### Available Scripts
-
-```bash
-# Development (with live reload)
-npm run dev
-
-# Build for production
-npm run build
-
-# Run built CLI
-npm start
-
-# Lint code
-npm run lint
-
-# Format code
-npm run format
-
-# Check code (lint + format)
-npm run check
-
-# Clean build output
-npm run clean
-```
-
-### Development Workflow
-
-1. **Development Mode**: Use `npm run dev` for rapid iteration
-   ```bash
-   npm run dev -- 2h15m -m "Development work"
-   ```
-
-2. **Production Testing**: Build and test as users would
-   ```bash
-   npm run build
-   npm start -- 2h15m -m "Production test"
-   ```
-
-3. **Code Quality**: Run linting and formatting
-   ```bash
-   npm run check
-   ```
-
 ## 🔧 Architecture
 
 ### Technology Stack
@@ -194,30 +92,6 @@ npm run clean
 3. **Ink UI**: React-based CLI interface for rich user experience
 4. **Positional Arguments**: User-friendly syntax for time logging
 5. **Modular Structure**: Clear separation of concerns with dedicated directories
-
-## 🚧 Current Status
-
-### ✅ Completed
-- [x] Project setup and configuration
-- [x] Basic CLI structure with argument parsing
-- [x] Ink-based UI components
-- [x] TypeScript configuration
-- [x] Biome linting and formatting
-- [x] Development and build scripts
-- [x] Positional argument support for time logging
-
-### 🚧 In Progress
-- [ ] Git branch parsing functionality
-- [ ] Tempo API integration
-- [ ] Jira ticket ID extraction
-- [ ] Interactive time entry components
-
-### 📋 Planned
-- [ ] Configuration management
-- [ ] Error handling and validation
-- [ ] Testing framework setup
-- [ ] Documentation and examples
-- [ ] Packaging and distribution
 
 ## 🤝 Contributing
 
