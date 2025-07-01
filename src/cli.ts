@@ -77,21 +77,22 @@ async function main() {
 
   // Handle "today" command
   if (input[0] === 'today') {
-    // Import and run the today command
-    await import('./today.js');
+    const { showTodayWorklogs } = await import('./commands/index.js');
+    await showTodayWorklogs();
     return;
   }
 
   // Handle "sprint" command
   if (input[0] === 'sprint') {
-    // Import and run the sprint command
-    await import('./sprint.js');
+    const { showSprintWorklogs } = await import('./commands/index.js');
+    await showSprintWorklogs();
     return;
   }
 
   // Handle "init" command
   if (input[0] === 'init') {
-    await import('./init.js');
+    const { init } = await import('./commands/index.js');
+    await init();
     return;
   }
 

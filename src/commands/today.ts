@@ -1,7 +1,5 @@
-#!/usr/bin/env node
-
-import { createJiraClientFromEnv } from './api/jira-client.js';
-import { secondsToJiraFormat } from './utils/time-parser.js';
+import { createJiraClientFromEnv } from '../api/jira-client.js';
+import { secondsToJiraFormat } from '../utils/time-parser.js';
 
 /**
  * Extract text from JIRA comment (handles both string and structured formats)
@@ -31,7 +29,7 @@ function extractCommentText(comment: string | { content: Array<{ content: Array<
   return 'No comment';
 }
 
-async function showTodayWorklogs() {
+export async function showTodayWorklogs() {
   try {
     const client = createJiraClientFromEnv();
     // Test connection
@@ -74,4 +72,7 @@ async function showTodayWorklogs() {
   }
 }
 
-showTodayWorklogs().catch(console.error); 
+// For backward compatibility when running directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  showTodayWorklogs().catch(console.error);
+} 

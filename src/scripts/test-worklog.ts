@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
-import { createJiraClientFromEnv } from './api/jira-client.js';
-import { parseTimeToSeconds, secondsToJiraFormat, formatJiraDate } from './utils/time-parser.js';
+import { createJiraClientFromEnv } from '../api/jira-client.js';
+import { parseTimeToSeconds, secondsToJiraFormat, formatJiraDate } from '../utils/time-parser.js';
 
 async function testWorklogCreation() {
   console.log('🧪 Testing worklog creation...\n');

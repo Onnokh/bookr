@@ -1,7 +1,5 @@
-#!/usr/bin/env node
-
-import { createJiraClientFromEnv } from './api/jira-client.js';
-import { secondsToJiraFormat } from './utils/time-parser.js';
+import { createJiraClientFromEnv } from '../api/jira-client.js';
+import { secondsToJiraFormat } from '../utils/time-parser.js';
 import inquirer from 'inquirer';
 
 /**
@@ -105,7 +103,7 @@ async function selectSprint(client: any): Promise<{ id: number; name: string; st
   return sprints.find((s: { id: number }) => s.id === sprintId) || null;
 }
 
-async function showSprintWorklogs() {
+export async function showSprintWorklogs() {
   try {
     const client = createJiraClientFromEnv();
     
@@ -232,4 +230,7 @@ async function showSprintWorklogs() {
   }
 }
 
-showSprintWorklogs().catch(console.error); 
+// For backward compatibility when running directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  showSprintWorklogs().catch(console.error);
+} 

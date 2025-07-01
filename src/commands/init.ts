@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 import inquirer from 'inquirer';
 import envPaths from 'env-paths';
 import fs from 'fs';
@@ -39,14 +37,17 @@ async function saveConfig(config: Record<string, string>) {
   await fs.promises.writeFile(configFile, JSON.stringify(config, null, 2), { mode: 0o600 });
 }
 
-async function main() {
+export async function init() {
   console.log('🔧 Bookr Init: Set up your JIRA credentials\n');
   const config = await promptForConfig();
   await saveConfig(config);
   console.log(`\n✅ Config saved to ${configFile}`);
 }
 
-main().catch(err => {
-  console.error('❌ Error during init:', err);
-  process.exit(1);
-}); 
+// For backward compatibility when running directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  init().catch(err => {
+    console.error('❌ Error during init:', err);
+    process.exit(1);
+  });
+} 
