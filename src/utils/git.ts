@@ -45,10 +45,12 @@ export function isGitRepository(): boolean {
 export function extractJiraIssueKey(branchName: string): string | null {
   // Common patterns for JIRA issue keys in branch names
   // Support both uppercase and lowercase project keys
+  // Handle additional path segments after the issue key
+  // Project keys can contain numbers (e.g., SUM25, OCI2025P, WILLEMII)
   const patterns = [
-    /(?:feature|bugfix|hotfix|release)\/([A-Za-z]+-\d+)/i,
-    /([A-Za-z]+-\d+)/,
-    /(?:issue|ticket)\/([A-Za-z]+-\d+)/i
+    /(?:feature|bugfix|hotfix|release)\/([A-Za-z0-9]+-\d+)(?:\/.*)?/i,
+    /([A-Za-z0-9]+-\d+)(?:\/.*)?/,
+    /(?:issue|ticket)\/([A-Za-z0-9]+-\d+)(?:\/.*)?/i
   ];
 
   for (const pattern of patterns) {
