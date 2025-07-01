@@ -8,6 +8,9 @@ pnpm-debug.log*
 # Build outputs
 dist/
 
+# Test coverage
+coverage/
+
 # Environment variables
 .env
 
