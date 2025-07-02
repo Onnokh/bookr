@@ -25,7 +25,6 @@
     "test:integration:issues": "vitest run test/integration/issues.test.ts",
     "test:integration:update": "vitest run test/integration/update-checker.test.ts",
     "test:integration:extraction": "vitest run test/integration/issue-extraction.test.ts",
-    "test:debug-worklogs": "tsx src/commands/today.ts --debug-worklogs OCI2025PO-372",
     "biome:lint": "biome lint .",
     "biome:check": "biome check .",
     "biome:format": "biome format . --write",

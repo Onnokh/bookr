@@ -55,15 +55,17 @@ export class JiraClient {
       });
 
       if (!response.ok) {
-        // Try to parse as JSON first, but fall back to text if it fails
+        // Clone the response before reading it to avoid consuming the stream
+        const responseClone = response.clone();
         let errorMessage = response.statusText;
+        
         try {
           const errorData = (await response.json()) as JiraError;
           errorMessage = errorData.errorMessages?.join(', ') || response.statusText;
         } catch {
-          // If JSON parsing fails, try to get the response as text
+          // If JSON parsing fails, try to get the response as text from the cloned response
           try {
-            const textResponse = await response.text();
+            const textResponse = await responseClone.text();
             errorMessage = textResponse || response.statusText;
           } catch {
             errorMessage = response.statusText;

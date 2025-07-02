@@ -90,7 +90,11 @@ export async function init() {
         
         if (addTempo) {
           console.log('🔧 Bookr: Add Tempo API Token to existing configuration\n');
-          console.log('🔧 https://indicia-nl.atlassian.net/plugins/servlet/ac/io.tempo.jira/tempo-app#!/configuration/api-integration\n');
+          
+          // Extract hostname from JIRA base URL to construct Tempo URL
+          const jiraUrl = new URL(existingConfig.baseUrl);
+          const tempoUrl = `https://${jiraUrl.hostname}/plugins/servlet/ac/io.tempo.jira/tempo-app#!/configuration/api-integration`;
+          console.log(`🔧 ${tempoUrl}\n`);
           
           const tempoConfig = await promptForTempoToken();
           
