@@ -1,7 +1,7 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { readCache, writeCache, clearCache } from '@/utils/cache.js';
+import { clearCache, readCache, writeCache } from '@/utils/cache.js';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('env-paths', () => ({
   default: () => ({ cache: '/mock' }),
@@ -11,10 +11,10 @@ vi.mock('node:path');
 
 describe('Cache Utils', () => {
   const mockCachePath = '/mock/update-cache.json';
-  const mockCache = { 
+  const mockCache = {
     lastCheck: Date.now(),
     latestVersion: '1.0.0',
-    updateAvailable: false
+    updateAvailable: false,
   };
 
   beforeEach(() => {

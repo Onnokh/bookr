@@ -11,6 +11,7 @@ export class JiraClient {
       Authorization: `Basic ${Buffer.from(`${auth.email}:${auth.apiToken}`).toString('base64')}`,
       Accept: 'application/json',
       'Content-Type': 'application/json',
+      'User-Agent': 'bookr-cli/1.0',
     };
   }
 
@@ -54,10 +55,30 @@ export class JiraClient {
       });
 
       if (!response.ok) {
-        const errorData = (await response.json()) as JiraError;
-        throw new Error(
-          `Failed to get current user: ${errorData.errorMessages?.join(', ') || response.statusText}`
-        );
+        // Clone the response before reading it to avoid consuming the stream
+        const responseClone = response.clone();
+        let errorMessage = response.statusText;
+        
+        try {
+          const errorData = (await response.json()) as JiraError;
+          errorMessage = errorData.errorMessages?.join(', ') || response.statusText;
+        } catch {
+          // If JSON parsing fails, try to get the response as text from the cloned response
+          try {
+            const textResponse = await responseClone.text();
+            errorMessage = textResponse || response.statusText;
+          } catch {
+            errorMessage = response.statusText;
+          }
+        }
+        
+        if (response.status === 401 || response.status === 403) {
+          throw new Error(
+            'Authentication failed. Please check your JIRA credentials and run `bookr init` to update them.'
+          );
+        }
+        
+        throw new Error(`Failed to get current user: ${errorMessage}`);
       }
 
       return (await response.json()) as JiraUser;
@@ -116,6 +137,31 @@ export class JiraClient {
     } catch (error) {
       throw new Error(
         `Error adding worklog to ${issueKey}: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * Delete a worklog entry from a JIRA issue
+   */
+  async deleteWorklog(issueKey: string, worklogId: string): Promise<void> {
+    const url = `${this.auth.baseUrl}/rest/api/3/issue/${issueKey}/worklog/${worklogId}`;
+
+    try {
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: this.baseHeaders,
+      });
+
+      if (!response.ok) {
+        const errorData = (await response.json()) as JiraError;
+        throw new Error(
+          `Failed to delete worklog: ${errorData.errorMessages?.join(', ') || response.statusText}`
+        );
+      }
+    } catch (error) {
+      throw new Error(
+        `Error deleting worklog ${worklogId} from ${issueKey}: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
   }
@@ -235,7 +281,7 @@ export class JiraClient {
   }
 
   /**
-   * Get today's worklogs for the current user
+   * Get today's worklogs for all authors
    */
   async getTodayWorklogs(): Promise<Array<{ issue: JiraIssue; worklog: JiraWorklog }>> {
     const today = new Date();
@@ -246,8 +292,8 @@ export class JiraClient {
     const startDate = startOfDay.toISOString().split('T')[0];
     const endDate = endOfDay.toISOString().split('T')[0];
 
-    // Search for issues with worklogs created today by current user
-    const jql = `worklogDate >= "${startDate}" AND worklogDate <= "${endDate}" AND worklogAuthor = currentUser() ORDER BY updated DESC`;
+    // Search for issues with worklogs created today (any author)
+    const jql = `worklogDate >= "${startDate}" AND worklogDate <= "${endDate}" ORDER BY updated DESC`;
 
     try {
       const result = await this.searchIssues(jql, 50);
@@ -430,8 +476,6 @@ export class JiraClient {
 
     // Search for issues with worklogs in the date range by current user
     const jql = `worklogDate >= "${startDateStr}" AND worklogDate <= "${endDateStr}" AND worklogAuthor = currentUser() ORDER BY updated DESC`;
-
-    console.log(`🔍 JQL Query: ${jql}`);
 
     try {
       const result = await this.searchIssues(jql, 500); // Higher limit for comprehensive search

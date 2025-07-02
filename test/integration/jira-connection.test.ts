@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { createClient } from '../../src/api/jira-client.js';
 import type { JiraClient } from '../../src/api/jira-client.js';
 
@@ -12,7 +12,7 @@ describe('JIRA Integration - Connection', () => {
       console.log('   Set JIRA_BASE_URL, JIRA_EMAIL, and JIRA_API_TOKEN to run these tests');
       return;
     }
-    
+
     client = createClient();
   });
 
@@ -33,13 +33,13 @@ describe('JIRA Integration - Connection', () => {
     }
 
     const user = await client.getCurrentUser();
-    
+
     expect(user).toHaveProperty('displayName');
     expect(user).toHaveProperty('emailAddress');
     expect(user).toHaveProperty('accountId');
     expect(typeof user.displayName).toBe('string');
     expect(typeof user.emailAddress).toBe('string');
-    
+
     console.log(`👤 Logged in as: ${user.displayName} (${user.emailAddress})`);
   });
 
@@ -59,7 +59,7 @@ describe('JIRA Integration - Connection', () => {
     } catch (error) {
       // Expected to fail if PROJ-123 doesn't exist
       expect(error).toBeInstanceOf(Error);
-      console.log('⚠️  Issue retrieval failed (expected if PROJ-123 doesn\'t exist):');
+      console.log("⚠️  Issue retrieval failed (expected if PROJ-123 doesn't exist):");
       console.log(`   ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   });
@@ -72,4 +72,4 @@ describe('JIRA Integration - Connection', () => {
 
     await expect(client.getIssue('NONEXISTENT-999')).rejects.toThrow();
   });
-}); 
+});

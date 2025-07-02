@@ -1,16 +1,13 @@
 {
   "name": "bookr-cli",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "type": "module",
   "description": "A terminal-based CLI tool to book time in Jira using the Tempo plugin by parsing your current Git branch name",
   "main": "dist/cli.js",
   "bin": {
     "bookr": "dist/cli.js"
   },
-  "files": [
-    "dist/**/*",
-    "README.md"
-  ],
+  "files": ["dist/**/*", "README.md"],
   "scripts": {
     "dev": "tsx watch src/cli.ts",
     "build": "tsc",

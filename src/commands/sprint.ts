@@ -1,9 +1,10 @@
 import inquirer from 'inquirer';
 import { type JiraClient, createClient } from '../api/jira-client.js';
-import type { JiraIssue, JiraWorklog } from '../types/jira.js';
+import { createTempoClient } from '../api/tempo-client.js';
 import { formatDateRange } from '../utils/date.js';
-import { extractCommentText } from '../utils/jira.js';
 import { secondsToJiraFormat } from '../utils/time-parser.js';
+import { parallelMapLimit } from '../utils/concurrency.js';
+import type { TempoWorklog, TempoWorklogsResponse } from '../types/tempo.js';
 
 function parseArgs(): { history: boolean } {
   return {
@@ -23,8 +24,6 @@ async function selectSprint(client: JiraClient): Promise<{
     console.log('❌ No boards found.');
     return null;
   }
-
-  // If there's only one board, use it directly
   let boardId: number;
   if (boards.length === 1) {
     const board = boards[0];
@@ -35,13 +34,11 @@ async function selectSprint(client: JiraClient): Promise<{
     boardId = board.id;
     console.log(`📋 Using board: ${board.name}`);
   } else {
-    // Let user select a board
     const boardChoices = boards.map((board: { id: number; name: string }) => ({
       name: board.name,
       value: board.id,
       short: board.name,
     }));
-
     const { selectedBoardId } = await inquirer.prompt([
       {
         type: 'list',
@@ -53,15 +50,12 @@ async function selectSprint(client: JiraClient): Promise<{
     ]);
     boardId = selectedBoardId;
   }
-
   const sprints = await client.getSprintsForBoard(boardId);
   if (!sprints.length) {
     console.log('❌ No sprints found for the selected board.');
     return null;
   }
-
   console.log(`📊 Found ${sprints.length} sprints for this board.`);
-
   const choices = sprints.map(
     (sprint: {
       id: number;
@@ -87,17 +81,12 @@ async function selectSprint(client: JiraClient): Promise<{
   return sprints.find((s: { id: number }) => s.id === sprintId) || null;
 }
 
+
+
 export async function showSprintWorklogs() {
   try {
     const client = createClient();
-
-    // Test connection
-    const isConnected = await client.testConnection();
-    if (!isConnected) {
-      console.log('❌ Failed to connect to JIRA');
-      return;
-    }
-
+    const tempoClient = createTempoClient();
     const { history } = parseArgs();
     let sprint: {
       id: number;
@@ -121,104 +110,55 @@ export async function showSprintWorklogs() {
     }
     const startDate = new Date(sprint.startDate);
     const endDate = new Date(sprint.endDate);
-    const dateRange = formatDateRange(startDate, endDate);
-
-    console.log(`🔄 Fetching worklogs for sprint: ${sprint.name}`);
-    console.log(
-      `📅 Searching for worklogs between: ${startDate.toISOString()} and ${endDate.toISOString()}`
-    );
-    console.log(
-      `📅 Date range: ${startDate.toLocaleDateString()} to ${endDate.toLocaleDateString()}`
-    );
-
-    try {
-      // Use the new method that searches for worklogs within the exact date range
-      console.log('🔍 Starting worklog search...');
-      const worklogsWithIssues = await client.searchWorklogsByDateRange(startDate, endDate);
-      console.log(`📊 Found ${worklogsWithIssues.length} worklog entries for this sprint period.`);
-
-      // Display sprint header
-      console.log('─'.repeat(80));
-      console.log(`🏃‍♂️  SPRINT WORKLOGS: ${sprint.name} (${dateRange})`);
-      console.log('─'.repeat(80));
-
-      if (worklogsWithIssues.length === 0) {
-        console.log('📭 No worklogs found for this sprint period.');
-        console.log(`📊 Sprint period: ${dateRange}`);
-        console.log(`📊 Current date: ${new Date().toLocaleDateString()}`);
-        return;
-      }
-
-      // Calculate total time
-      let totalSeconds = 0;
-
-      // Group worklogs by date
-      const worklogsByDate: Record<string, Array<{ issue: JiraIssue; worklog: JiraWorklog }>> = {};
-
-      for (const { issue, worklog } of worklogsWithIssues) {
-        const timeSpent = worklog.timeSpentSeconds || 0;
-        totalSeconds += timeSpent;
-
-        if (!worklog.started) continue; // Skip worklogs without start date
-
-        const worklogDate = new Date(worklog.started);
-        const dateKey = worklogDate.toLocaleDateString();
-
-        if (!worklogsByDate[dateKey]) {
-          worklogsByDate[dateKey] = [];
-        }
-        worklogsByDate[dateKey].push({ issue, worklog });
-      }
-
-      // Display worklogs grouped by date
-      for (const [date, dayWorklogs] of Object.entries(worklogsByDate)) {
-        console.log(`\n📅 ${date}:`);
-        console.log('─'.repeat(40));
-
-        let dayTotal = 0;
-
-        for (const { issue, worklog } of dayWorklogs) {
-          const timeSpent = worklog.timeSpentSeconds || 0;
-          dayTotal += timeSpent;
-          const timeDisplay = secondsToJiraFormat(timeSpent);
-          const comment = extractCommentText(worklog.comment);
-
-          console.log(`${issue.key.padEnd(12)} | ${issue.fields.summary}`);
-          if (comment && comment !== 'No comment') {
-            console.log(`${timeDisplay.padEnd(12)} - ${comment}`);
-          }
-          console.log('');
-        }
-
-        const dayTotalDisplay = secondsToJiraFormat(dayTotal);
-        console.log(`📊 Day Total: ${dayTotalDisplay}`);
-      }
-
-      // Display summary
-      console.log('─'.repeat(80));
-      const totalTime = secondsToJiraFormat(totalSeconds);
-      const totalHours = (totalSeconds / 3600).toFixed(2);
-
-      console.log('📊 Sprint Summary:');
-      console.log(`   Period: ${dateRange}`);
-      console.log(`   Total Time: ${totalTime} (${totalHours} hours)`);
-      console.log(`   Worklog Entries: ${worklogsWithIssues.length}`);
-
-      // Calculate average time per day
-      const sprintDays =
-        Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
-      const avgTimePerDay = totalSeconds / sprintDays;
-      const avgTimePerDayDisplay = secondsToJiraFormat(avgTimePerDay);
-      console.log(`   Average Time per Day: ${avgTimePerDayDisplay}`);
-
-      // Show unique issues worked on
-      const uniqueIssues = new Set(worklogsWithIssues.map((w) => w.issue.key)).size;
-      console.log(`   Issues Worked On: ${uniqueIssues}`);
-    } catch (error) {
-      throw new Error(
-        `Error fetching sprint worklogs: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
+    const fromISO = startDate.toISOString().slice(0, 10);
+    const toISO = endDate.toISOString().slice(0, 10);
+    const user = await client.getCurrentUser();
+    console.log(`${sprint.name}`);
+    console.log(`${fromISO} to ${toISO}`);
+    const tempoWorklogsResponse = await tempoClient.getWorklogsForUser(user.accountId, fromISO, toISO);
+    const tempoWorklogs = (tempoWorklogsResponse && typeof tempoWorklogsResponse === 'object' && Array.isArray((tempoWorklogsResponse as TempoWorklogsResponse).results))
+      ? (tempoWorklogsResponse as TempoWorklogsResponse).results
+      : Array.isArray(tempoWorklogsResponse) ? tempoWorklogsResponse as TempoWorklog[] : [];
+    if (!tempoWorklogs.length) {
+      console.log('📭 No worklogs found for this sprint period.');
+      return;
     }
+    // Collect unique issue IDs
+    const uniqueIssueIds = Array.from(new Set(tempoWorklogs.map((w: TempoWorklog) => w.issue?.id).filter(Boolean)));
+    // Fetch all issues in parallel (limit concurrency to 5)
+    const issueMap = new Map();
+    await parallelMapLimit(uniqueIssueIds, 5, async (id) => {
+      try {
+        const issue = await client.getIssue(String(id));
+        issueMap.set(id, { key: issue.key, summary: issue.fields.summary });
+      } catch {
+        // If not found, skip
+      }
+    });
+    // Table header
+    console.log('─'.repeat(120));
+    console.log(`${'ID'.padEnd(12)} | ${'Issue'.padEnd(16)} | ${'Time'.padEnd(6)} | Summary`);
+    console.log('─'.repeat(120));
+    let totalSeconds = 0;
+    const uniqueIssues = new Set<string>();
+    for (const worklog of tempoWorklogs) {
+      const timeSpentSeconds = typeof worklog.timeSpentSeconds === 'number' ? worklog.timeSpentSeconds : 0;
+      totalSeconds += timeSpentSeconds;
+      const timeDisplay = secondsToJiraFormat(timeSpentSeconds);
+      const issueId = worklog.issue?.id || '';
+      const issueInfo = issueMap.get(issueId) || {};
+      const issueKey = issueInfo.key || '';
+      uniqueIssues.add(String(issueKey));
+      const summary = issueInfo.summary || worklog.description || '';
+      const worklogId = worklog.tempoWorklogId ? String(worklog.tempoWorklogId) : String(worklog.id || '');
+      console.log(`${worklogId.padEnd(12)} | ${issueKey.padEnd(16)} | ${timeDisplay.padEnd(6)} | ${summary}`);
+    }
+    console.log('─'.repeat(120));
+    const totalTime = secondsToJiraFormat(totalSeconds);
+    const totalHours = (totalSeconds / 3600).toFixed(2);
+    console.log(`📊 Sprint Total: ${totalTime} (${totalHours} hours)`);
+    console.log(`📝 Worklog entries: ${tempoWorklogs.length}`);
+    console.log(`🎯 Issues worked on: ${uniqueIssues.size}`);
   } catch (error) {
     console.error('❌ Error:', error instanceof Error ? error.message : error);
   }
