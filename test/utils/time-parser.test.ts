@@ -1,11 +1,11 @@
-import { describe, it, expect } from 'vitest';
 import {
+  formatJiraDate,
+  formatTimeForDisplay,
+  isValidTimeFormat,
   parseTimeToSeconds,
   secondsToJiraFormat,
-  isValidTimeFormat,
-  formatTimeForDisplay,
-  formatJiraDate,
 } from '@/utils/time-parser.js';
+import { describe, expect, it } from 'vitest';
 
 describe('parseTimeToSeconds', () => {
   it('should parse decimal hours correctly', () => {

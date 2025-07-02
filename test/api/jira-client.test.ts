@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { JiraClient } from '@/api/jira-client';
 import type { JiraAuth, JiraIssue, JiraUser, JiraWorklog } from '@/types/jira';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 // Mock fetch globally
 global.fetch = vi.fn() as any;
@@ -54,6 +54,7 @@ describe('JiraClient', () => {
             Authorization: 'Basic dGVzdEBleGFtcGxlLmNvbTp0ZXN0LXRva2Vu',
             Accept: 'application/json',
             'Content-Type': 'application/json',
+            'User-Agent': 'bookr-cli/1.0',
           },
         }
       );
@@ -106,6 +107,7 @@ describe('JiraClient', () => {
           Authorization: 'Basic dGVzdEBleGFtcGxlLmNvbTp0ZXN0LXRva2Vu',
           Accept: 'application/json',
           'Content-Type': 'application/json',
+          'User-Agent': 'bookr-cli/1.0',
         },
       });
       expect(result).toEqual(mockUser);
@@ -143,6 +145,7 @@ describe('JiraClient', () => {
             Authorization: 'Basic dGVzdEBleGFtcGxlLmNvbTp0ZXN0LXRva2Vu',
             Accept: 'application/json',
             'Content-Type': 'application/json',
+            'User-Agent': 'bookr-cli/1.0',
           },
           body: expect.stringContaining('"timeSpentSeconds":3600'),
         }

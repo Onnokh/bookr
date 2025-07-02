@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
 import { getTodayISO, getYesterdayISO } from '@/utils/date.js';
+import { describe, expect, it } from 'vitest';
 
 describe('Date Utils', () => {
   it("should return today's date in ISO format", () => {

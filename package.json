@@ -7,10 +7,7 @@
   "bin": {
     "bookr": "dist/cli.js"
   },
-  "files": [
-    "dist/**/*",
-    "README.md"
-  ],
+  "files": ["dist/**/*", "README.md"],
   "scripts": {
     "dev": "tsx watch src/cli.ts",
     "build": "tsc",
