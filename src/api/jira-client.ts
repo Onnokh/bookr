@@ -11,6 +11,7 @@ export class JiraClient {
       Authorization: `Basic ${Buffer.from(`${auth.email}:${auth.apiToken}`).toString('base64')}`,
       Accept: 'application/json',
       'Content-Type': 'application/json',
+      'User-Agent': 'bookr-cli/1.0',
     };
   }
 
@@ -54,10 +55,28 @@ export class JiraClient {
       });
 
       if (!response.ok) {
-        const errorData = (await response.json()) as JiraError;
-        throw new Error(
-          `Failed to get current user: ${errorData.errorMessages?.join(', ') || response.statusText}`
-        );
+        // Try to parse as JSON first, but fall back to text if it fails
+        let errorMessage = response.statusText;
+        try {
+          const errorData = (await response.json()) as JiraError;
+          errorMessage = errorData.errorMessages?.join(', ') || response.statusText;
+        } catch {
+          // If JSON parsing fails, try to get the response as text
+          try {
+            const textResponse = await response.text();
+            errorMessage = textResponse || response.statusText;
+          } catch {
+            errorMessage = response.statusText;
+          }
+        }
+        
+        if (response.status === 401 || response.status === 403) {
+          throw new Error(
+            'Authentication failed. Please check your JIRA credentials and run `bookr init` to update them.'
+          );
+        }
+        
+        throw new Error(`Failed to get current user: ${errorMessage}`);
       }
 
       return (await response.json()) as JiraUser;
@@ -455,8 +474,6 @@ export class JiraClient {
 
     // Search for issues with worklogs in the date range by current user
     const jql = `worklogDate >= "${startDateStr}" AND worklogDate <= "${endDateStr}" AND worklogAuthor = currentUser() ORDER BY updated DESC`;
-
-    console.log(`🔍 JQL Query: ${jql}`);
 
     try {
       const result = await this.searchIssues(jql, 500); // Higher limit for comprehensive search
