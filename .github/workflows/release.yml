@@ -46,20 +46,10 @@ jobs:
           tag_name: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
           body: |
-            ## What's Changed
+            ## Release Notes
             
-            This release includes the latest updates and improvements.
+            This release contains various improvements and bug fixes.
             
-            ### Installation
-            
-            ```bash
-            npm install -g bookr-cli
-            ```
-            
-            ### Usage
-            
-            ```bash
-            bookr
-            ```
+            For more information, please refer to the commit history and documentation.
           draft: false
           prerelease: false 
