@@ -5,6 +5,8 @@ import {
   getStoredWorklogById,
   removeStoredWorklog,
 } from '../utils/worklog-storage.js';
+import { parallelMapLimit } from '../utils/concurrency.js';
+import type { TempoWorklog, TempoWorklogsResponse } from '../types/tempo.js';
 
 interface JiraRichTextContent {
   content?: Array<{
@@ -18,20 +20,7 @@ interface JiraRichTextContent {
   version?: number;
 }
 
-// Helper to limit concurrency for parallel fetches
-async function parallelMapLimit<T, R>(arr: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
-  const ret: R[] = [];
-  let i = 0;
-  async function next() {
-    if (i >= arr.length) return;
-    const idx = i++;
-    const item = arr[idx];
-    ret[idx] = item !== undefined ? await fn(item) : undefined as any;
-    await next();
-  }
-  await Promise.all(Array(Math.min(limit, arr.length)).fill(0).map(next));
-  return ret;
-}
+
 
 /**
  * Show interactive selection of recent worklogs to undo (Tempo-first)
@@ -43,9 +32,9 @@ export async function showUndoSelection() {
     const user = await client.getCurrentUser();
     const todayISO = new Date().toISOString().slice(0, 10);
     const tempoWorklogsResponse = await tempoClient.getWorklogsForUser(user.accountId, todayISO, todayISO);
-    const tempoWorklogs = (tempoWorklogsResponse && typeof tempoWorklogsResponse === 'object' && Array.isArray((tempoWorklogsResponse as any).results))
-      ? (tempoWorklogsResponse as any).results
-      : Array.isArray(tempoWorklogsResponse) ? tempoWorklogsResponse : [];
+    const tempoWorklogs = (tempoWorklogsResponse && typeof tempoWorklogsResponse === 'object' && Array.isArray((tempoWorklogsResponse as TempoWorklogsResponse).results))
+      ? (tempoWorklogsResponse as TempoWorklogsResponse).results
+      : Array.isArray(tempoWorklogsResponse) ? tempoWorklogsResponse as TempoWorklog[] : [];
 
     // Optionally, you could also fetch Jira worklogs if you want to support undo for both sources
     // For now, we focus on Tempo worklogs
@@ -57,7 +46,7 @@ export async function showUndoSelection() {
     }
 
     // Enrich with Jira issue info
-    const uniqueIssueIds = Array.from(new Set((tempoWorklogs as any[]).map((w: any) => w.issue?.id).filter(Boolean)));
+    const uniqueIssueIds = Array.from(new Set(tempoWorklogs.map((w: TempoWorklog) => w.issue?.id).filter(Boolean)));
     const issueMap = new Map();
     await parallelMapLimit(uniqueIssueIds, 5, async (id) => {
       try {
@@ -74,8 +63,8 @@ export async function showUndoSelection() {
       `${'ID'.padEnd(17)} | ${'Issue'.padEnd(12)} | ${'Time'.padEnd(8)} | ${'Summary'.padEnd(50)} | Source`
     );
     console.log('─'.repeat(120));
-    for (const worklog of tempoWorklogs as any[]) {
-      const timeSpentSeconds = worklog.timeSpentSeconds || worklog.timeSpent || 0;
+    for (const worklog of tempoWorklogs) {
+      const timeSpentSeconds = typeof worklog.timeSpentSeconds === 'number' ? worklog.timeSpentSeconds : 0;
       const timeDisplay = secondsToJiraFormat(timeSpentSeconds);
       const issueId = worklog.issue?.id || '';
       const issueInfo = issueMap.get(issueId) || {};

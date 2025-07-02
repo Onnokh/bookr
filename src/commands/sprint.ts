@@ -3,6 +3,8 @@ import { type JiraClient, createClient } from '../api/jira-client.js';
 import { createTempoClient } from '../api/tempo-client.js';
 import { formatDateRange } from '../utils/date.js';
 import { secondsToJiraFormat } from '../utils/time-parser.js';
+import { parallelMapLimit } from '../utils/concurrency.js';
+import type { TempoWorklog, TempoWorklogsResponse } from '../types/tempo.js';
 
 function parseArgs(): { history: boolean } {
   return {
@@ -79,20 +81,7 @@ async function selectSprint(client: JiraClient): Promise<{
   return sprints.find((s: { id: number }) => s.id === sprintId) || null;
 }
 
-// Helper to limit concurrency for parallel fetches
-async function parallelMapLimit<T, R>(arr: T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
-  const ret: R[] = [];
-  let i = 0;
-  async function next() {
-    if (i >= arr.length) return;
-    const idx = i++;
-    const item = arr[idx];
-    ret[idx] = item !== undefined ? await fn(item) : undefined as any;
-    await next();
-  }
-  await Promise.all(Array(Math.min(limit, arr.length)).fill(0).map(next));
-  return ret;
-}
+
 
 export async function showSprintWorklogs() {
   try {
@@ -127,15 +116,15 @@ export async function showSprintWorklogs() {
     console.log(`${sprint.name}`);
     console.log(`${fromISO} to ${toISO}`);
     const tempoWorklogsResponse = await tempoClient.getWorklogsForUser(user.accountId, fromISO, toISO);
-    const tempoWorklogs = (tempoWorklogsResponse && typeof tempoWorklogsResponse === 'object' && Array.isArray((tempoWorklogsResponse as any).results))
-      ? (tempoWorklogsResponse as any).results
-      : Array.isArray(tempoWorklogsResponse) ? tempoWorklogsResponse : [];
+    const tempoWorklogs = (tempoWorklogsResponse && typeof tempoWorklogsResponse === 'object' && Array.isArray((tempoWorklogsResponse as TempoWorklogsResponse).results))
+      ? (tempoWorklogsResponse as TempoWorklogsResponse).results
+      : Array.isArray(tempoWorklogsResponse) ? tempoWorklogsResponse as TempoWorklog[] : [];
     if (!tempoWorklogs.length) {
       console.log('📭 No worklogs found for this sprint period.');
       return;
     }
     // Collect unique issue IDs
-    const uniqueIssueIds = Array.from(new Set((tempoWorklogs as any[]).map((w: any) => w.issue?.id).filter(Boolean)));
+    const uniqueIssueIds = Array.from(new Set(tempoWorklogs.map((w: TempoWorklog) => w.issue?.id).filter(Boolean)));
     // Fetch all issues in parallel (limit concurrency to 5)
     const issueMap = new Map();
     await parallelMapLimit(uniqueIssueIds, 5, async (id) => {
@@ -152,8 +141,8 @@ export async function showSprintWorklogs() {
     console.log('─'.repeat(120));
     let totalSeconds = 0;
     const uniqueIssues = new Set<string>();
-    for (const worklog of tempoWorklogs as any[]) {
-      const timeSpentSeconds = worklog.timeSpentSeconds || worklog.timeSpent || 0;
+    for (const worklog of tempoWorklogs) {
+      const timeSpentSeconds = typeof worklog.timeSpentSeconds === 'number' ? worklog.timeSpentSeconds : 0;
       totalSeconds += timeSpentSeconds;
       const timeDisplay = secondsToJiraFormat(timeSpentSeconds);
       const issueId = worklog.issue?.id || '';

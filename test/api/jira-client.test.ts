@@ -54,6 +54,7 @@ describe('JiraClient', () => {
             Authorization: 'Basic dGVzdEBleGFtcGxlLmNvbTp0ZXN0LXRva2Vu',
             Accept: 'application/json',
             'Content-Type': 'application/json',
+            'User-Agent': 'bookr-cli/1.0',
           },
         }
       );
@@ -106,6 +107,7 @@ describe('JiraClient', () => {
           Authorization: 'Basic dGVzdEBleGFtcGxlLmNvbTp0ZXN0LXRva2Vu',
           Accept: 'application/json',
           'Content-Type': 'application/json',
+          'User-Agent': 'bookr-cli/1.0',
         },
       });
       expect(result).toEqual(mockUser);
@@ -143,6 +145,7 @@ describe('JiraClient', () => {
             Authorization: 'Basic dGVzdEBleGFtcGxlLmNvbTp0ZXN0LXRva2Vu',
             Accept: 'application/json',
             'Content-Type': 'application/json',
+            'User-Agent': 'bookr-cli/1.0',
           },
           body: expect.stringContaining('"timeSpentSeconds":3600'),
         }
