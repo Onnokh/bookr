@@ -47,9 +47,9 @@ export async function showTodayWorklogs() {
     });
 
     // Table header
-    console.log('─'.repeat(120));
-    console.log(`${'ID'.padEnd(17)} | ${'Issue'.padEnd(12)} | ${'Time'.padEnd(8)} | Summary`);
-    console.log('─'.repeat(120));
+    console.log('─'.repeat(140));
+    console.log(`${'Tempo ID'.padEnd(12)} | ${'Jira ID'.padEnd(12)} | ${'Issue'.padEnd(16)} | ${'Time'.padEnd(6)} | Summary`);
+    console.log('─'.repeat(140));
     let totalSeconds = 0;
     const uniqueIssues = new Set<string>();
     for (const worklog of tempoWorklogs as any[]) {
@@ -61,10 +61,11 @@ export async function showTodayWorklogs() {
       const issueKey = issueInfo.key || '';
       uniqueIssues.add(String(issueKey));
       const summary = issueInfo.summary || worklog.description || '';
-      const worklogId = worklog.tempoWorklogId ? String(worklog.tempoWorklogId) : String(worklog.id || '');
-      console.log(`${worklogId.padEnd(17)} | ${issueKey.padEnd(12)} | ${timeDisplay.padEnd(8)} | ${summary}`);
+      const tempoId = worklog.tempoWorklogId ? String(worklog.tempoWorklogId) : '';
+      const jiraId = worklog.id ? String(worklog.id) : '';
+      console.log(`${tempoId.padEnd(12)} | ${jiraId.padEnd(12)} | ${issueKey.padEnd(16)} | ${timeDisplay.padEnd(6)} | ${summary}`);
     }
-    console.log('─'.repeat(120));
+    console.log('─'.repeat(140));
     const totalTime = secondsToJiraFormat(totalSeconds);
     const totalHours = (totalSeconds / 3600).toFixed(2);
     console.log(`📊 Total time today: ${totalTime} (${totalHours} hours)`);

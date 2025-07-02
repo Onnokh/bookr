@@ -20,6 +20,7 @@ async function main() {
       $ bookr today
       $ bookr sprint
       $ bookr undo [worklog_id]
+      $ bookr init
 
     Arguments
       ticket     Jira ticket key (e.g., "PROJ-123") - optional, will use Git branch if not provided
@@ -27,6 +28,8 @@ async function main() {
       today      Show today's worklogs and total hours with IDs
       sprint     Show worklogs for the last 14 days (sprint period)
       undo       Delete recent worklogs (interactive) or specific worklog by ID
+      init       Set up JIRA and Tempo credentials
+      tempo      Add Tempo API token to existing configuration
 
     Options
       --help, -h        Show help
@@ -87,6 +90,8 @@ async function main() {
     await command.default();
     return;
   }
+
+
 
   // Handle "undo" command
   if (input[0] === 'undo') {

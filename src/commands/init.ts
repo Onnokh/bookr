@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import envPaths from 'env-paths';
 import inquirer from 'inquirer';
+import { loadConfigFromFile } from '../utils/config.js';
 
 const paths = envPaths('bookr');
 const configDir = paths.config;
@@ -39,12 +40,67 @@ async function promptForConfig() {
   return await inquirer.prompt(questions);
 }
 
+async function promptForTempoToken() {
+  const questions = [
+    {
+      type: 'password' as const,
+      name: 'TEMPO_API_TOKEN',
+      message: 'Tempo API Token (from https://id.tempo.io/manage/api-tokens):',
+      mask: '*',
+      validate: (input: string) => input.length > 0 || 'Tempo API token cannot be empty.',
+    },
+  ];
+  return await inquirer.prompt(questions);
+}
+
 async function saveConfig(config: Record<string, string>) {
   await fs.promises.mkdir(configDir, { recursive: true });
   await fs.promises.writeFile(configFile, JSON.stringify(config, null, 2), { mode: 0o600 });
 }
 
+
+
 export async function init() {
+  const existingConfig = loadConfigFromFile();
+  
+  if (existingConfig?.baseUrl && existingConfig?.email && existingConfig?.apiToken) {
+    console.log('🔧 Bookr Init: Configuration already exists\n');
+    
+    if (!existingConfig.tempoApiToken) {
+      console.log('📝 Tempo API token is missing. Would you like to add it?');
+      const { addTempo } = await inquirer.prompt([
+        {
+          type: 'confirm',
+          name: 'addTempo',
+          message: 'Add Tempo API token to existing configuration?',
+          default: true,
+        },
+      ]);
+      
+      if (addTempo) {
+        console.log('🔧 Bookr: Add Tempo API Token to existing configuration\n');
+        console.log('🔧 https://indicia-nl.atlassian.net/plugins/servlet/ac/io.tempo.jira/tempo-app#!/configuration/api-integration\n');
+        
+        const tempoConfig = await promptForTempoToken();
+        
+        // Merge existing config with new Tempo token
+        const updatedConfig: Record<string, string> = {
+          JIRA_BASE_URL: existingConfig.baseUrl,
+          JIRA_EMAIL: existingConfig.email,
+          JIRA_API_TOKEN: existingConfig.apiToken,
+          TEMPO_API_TOKEN: tempoConfig['TEMPO_API_TOKEN'],
+        };
+        
+        await saveConfig(updatedConfig);
+        console.log(`\n✅ Tempo API token added to configuration at ${configFile}`);
+        return;
+      }
+    }
+    
+    console.log('✅ Configuration is already complete. No changes needed.');
+    return;
+  }
+  
   console.log('🔧 Bookr Init: Set up your JIRA credentials\n');
   const config = await promptForConfig();
   await saveConfig(config);
@@ -53,6 +109,8 @@ export async function init() {
 
 // Default export for CLI usage
 export default init;
+
+
 
 // For backward compatibility when running directly
 if (import.meta.url === `file://${process.argv[1]}`) {

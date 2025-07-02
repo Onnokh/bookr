@@ -148,7 +148,7 @@ export async function showSprintWorklogs() {
     });
     // Table header
     console.log('─'.repeat(120));
-    console.log(`${'ID'.padEnd(17)} | ${'Issue'.padEnd(12)} | ${'Time'.padEnd(8)} | Summary`);
+    console.log(`${'ID'.padEnd(12)} | ${'Issue'.padEnd(16)} | ${'Time'.padEnd(6)} | Summary`);
     console.log('─'.repeat(120));
     let totalSeconds = 0;
     const uniqueIssues = new Set<string>();
@@ -162,7 +162,7 @@ export async function showSprintWorklogs() {
       uniqueIssues.add(String(issueKey));
       const summary = issueInfo.summary || worklog.description || '';
       const worklogId = worklog.tempoWorklogId ? String(worklog.tempoWorklogId) : String(worklog.id || '');
-      console.log(`${worklogId.padEnd(17)} | ${issueKey.padEnd(12)} | ${timeDisplay.padEnd(8)} | ${summary}`);
+      console.log(`${worklogId.padEnd(12)} | ${issueKey.padEnd(16)} | ${timeDisplay.padEnd(6)} | ${summary}`);
     }
     console.log('─'.repeat(120));
     const totalTime = secondsToJiraFormat(totalSeconds);
