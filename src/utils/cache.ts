@@ -5,6 +5,7 @@ import envPaths from 'env-paths';
 interface CacheData {
   lastCheck: number;
   latestVersion: string;
+  currentVersion: string;
   updateAvailable: boolean;
 }
 

@@ -21,6 +21,7 @@ async function main() {
       $ bookr sprint
       $ bookr undo [worklog_id]
       $ bookr init
+      $ bookr update
 
     Arguments
       ticket     Jira ticket key (e.g., "PROJ-123") - optional, will use Git branch if not provided
@@ -29,7 +30,7 @@ async function main() {
       sprint     Show worklogs for the last 14 days (sprint period)
       undo       Delete recent worklogs (interactive) or specific worklog by ID
       init       Set up JIRA and Tempo credentials
-      tempo      Add Tempo API token to existing configuration
+      update     Check for available updates
 
     Options
       --help, -h        Show help
@@ -91,8 +92,6 @@ async function main() {
     return;
   }
 
-
-
   // Handle "undo" command
   if (input[0] === 'undo') {
     const command = await import('./commands/undo.js');
@@ -121,12 +120,14 @@ async function main() {
     return;
   }
 
+
+
   // Parse arguments to handle optional ticket parameter
   let ticket: string | undefined;
   let time: string | undefined;
 
   // Check if first argument looks like a ticket (contains a dash and number)
-  if (input[0] && /^[A-Z]+-\d+$/.test(input[0])) {
+  if (input[0] && /^[A-Z0-9]+-\d+$/.test(input[0])) {
     ticket = input[0];
     time = input[1];
   } else {

@@ -141,8 +141,8 @@ export async function showSprintWorklogs() {
     console.log('─'.repeat(120));
     let totalSeconds = 0;
     const uniqueIssues = new Set<string>();
-    for (const worklog of tempoWorklogs) {
-      const timeSpentSeconds = typeof worklog.timeSpentSeconds === 'number' ? worklog.timeSpentSeconds : 0;
+    for (const worklog of tempoWorklogs as TempoWorklog[]) {
+      const timeSpentSeconds = worklog.timeSpentSeconds || 0;
       totalSeconds += timeSpentSeconds;
       const timeDisplay = secondsToJiraFormat(timeSpentSeconds);
       const issueId = worklog.issue?.id || '';

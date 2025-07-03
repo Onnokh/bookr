@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readCache, writeCache } from './cache.js';
+import { readCache, writeCache, clearCache } from './cache.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -56,16 +56,34 @@ function compareVersions(current: string, latest: string): boolean {
 
 /**
  * Check if we should perform an update check
- * Only check once per day to avoid excessive API calls
+ * Check every 6 hours instead of 24 hours to reduce stale cache issues
  */
 function shouldCheckForUpdates(): boolean {
   const cache = readCache();
   if (!cache) return true;
 
-  const oneDay = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+  const sixHours = 6 * 60 * 60 * 1000; // 6 hours in milliseconds
   const timeSinceLastCheck = Date.now() - cache.lastCheck;
 
-  return timeSinceLastCheck > oneDay;
+  return timeSinceLastCheck > sixHours;
+}
+
+/**
+ * Check if cache is invalid due to version mismatch
+ * This handles cases where the package was updated but cache still has old data
+ */
+function isCacheInvalid(): boolean {
+  const cache = readCache();
+  if (!cache) return false;
+
+  const packageInfo = getPackageInfo();
+  const currentVersion = packageInfo.version;
+
+  // Cache is invalid if:
+  // 1. Current version is newer than cached latest version (package was updated)
+  // 2. Current version is different from what we last checked against
+  return compareVersions(cache.latestVersion, currentVersion) || 
+         cache.currentVersion !== currentVersion;
 }
 
 /**
@@ -95,7 +113,12 @@ export async function checkForUpdates(): Promise<UpdateInfo> {
   const packageInfo = getPackageInfo();
   const currentVersion = packageInfo.version;
 
-  // Check cache first
+  // Check if cache is invalid due to version changes
+  if (isCacheInvalid()) {
+    clearCache();
+  }
+
+  // Check cache first (but only if it's not too old and not invalid)
   if (!shouldCheckForUpdates()) {
     const cache = readCache();
     if (cache) {
@@ -116,6 +139,7 @@ export async function checkForUpdates(): Promise<UpdateInfo> {
     writeCache({
       lastCheck: Date.now(),
       latestVersion,
+      currentVersion,
       updateAvailable: hasUpdate,
     });
 
@@ -126,7 +150,18 @@ export async function checkForUpdates(): Promise<UpdateInfo> {
       isOutdated: hasUpdate,
     };
   } catch {
-    // If fetch fails, return current version info
+    // If fetch fails, try to use cache as fallback
+    const cache = readCache();
+    if (cache) {
+      return {
+        current: currentVersion,
+        latest: cache.latestVersion,
+        hasUpdate: cache.updateAvailable,
+        isOutdated: cache.updateAvailable,
+      };
+    }
+
+    // If no cache available, return current version info
     return {
       current: currentVersion,
       latest: currentVersion,
@@ -178,6 +213,7 @@ export async function forceCheckForUpdates(): Promise<UpdateInfo> {
     writeCache({
       lastCheck: Date.now(),
       latestVersion,
+      currentVersion,
       updateAvailable: hasUpdate,
     });
 
@@ -193,3 +229,5 @@ export async function forceCheckForUpdates(): Promise<UpdateInfo> {
     );
   }
 }
+
+
