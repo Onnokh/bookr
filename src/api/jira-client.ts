@@ -1,4 +1,4 @@
-import type { JiraAuth, JiraError, JiraIssue, JiraUser, JiraWorklog } from '../types/jira.js';
+import type { JiraAuth, JiraError, JiraIssue, JiraUser } from '../types/jira.js';
 import { loadConfigFromFile } from '../utils/config.js';
 
 export class JiraClient {
@@ -89,132 +89,7 @@ export class JiraClient {
     }
   }
 
-  /**
-   * Add a worklog entry to a JIRA issue
-   */
-  async addWorklog(
-    issueKey: string,
-    worklog: Omit<JiraWorklog, 'id' | 'author'>
-  ): Promise<JiraWorklog> {
-    const url = `${this.auth.baseUrl}/rest/api/3/issue/${issueKey}/worklog`;
-    try {
-      // Convert the worklog to the correct JIRA API format
-      const apiWorklog = {
-        timeSpentSeconds: worklog.timeSpentSeconds || this.parseTimeToSeconds(worklog.timeSpent),
-        comment: worklog.comment
-          ? {
-              content: [
-                {
-                  content: [
-                    {
-                      text: worklog.comment,
-                      type: 'text',
-                    },
-                  ],
-                  type: 'paragraph',
-                },
-              ],
-              type: 'doc',
-              version: 1,
-            }
-          : undefined,
-        started: worklog.started,
-      };
 
-      const requestBody = JSON.stringify(apiWorklog);
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: this.baseHeaders,
-        body: requestBody,
-      });
-      if (!response.ok) {
-        const errorData = (await response.json()) as JiraError;
-        throw new Error(
-          `Failed to add worklog: ${errorData.errorMessages?.join(', ') || response.statusText}`
-        );
-      }
-      return (await response.json()) as JiraWorklog;
-    } catch (error) {
-      throw new Error(
-        `Error adding worklog to ${issueKey}: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-    }
-  }
-
-  /**
-   * Delete a worklog entry from a JIRA issue
-   */
-  async deleteWorklog(issueKey: string, worklogId: string): Promise<void> {
-    const url = `${this.auth.baseUrl}/rest/api/3/issue/${issueKey}/worklog/${worklogId}`;
-
-    try {
-      const response = await fetch(url, {
-        method: 'DELETE',
-        headers: this.baseHeaders,
-      });
-
-      if (!response.ok) {
-        const errorData = (await response.json()) as JiraError;
-        throw new Error(
-          `Failed to delete worklog: ${errorData.errorMessages?.join(', ') || response.statusText}`
-        );
-      }
-    } catch (error) {
-      throw new Error(
-        `Error deleting worklog ${worklogId} from ${issueKey}: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-    }
-  }
-
-  /**
-   * Parse time string to seconds (helper method)
-   */
-  private parseTimeToSeconds(timeString: string): number {
-    const normalized = timeString.toLowerCase().trim();
-
-    // Handle decimal hours: "2.5h", "1.25h"
-    const decimalHoursMatch = normalized.match(/^(\d+(?:\.\d+)?)h?$/);
-    if (decimalHoursMatch?.[1]) {
-      const hours = Number.parseFloat(decimalHoursMatch[1]);
-      return Math.round(hours * 3600);
-    }
-
-    // Handle hours and minutes: "2h30m", "1h15m", "2h", "30m"
-    const hoursMatch = normalized.match(/(\d+)h/);
-    const minutesMatch = normalized.match(/(\d+)m/);
-
-    const hours = hoursMatch?.[1] ? Number.parseInt(hoursMatch[1], 10) : 0;
-    const minutes = minutesMatch?.[1] ? Number.parseInt(minutesMatch[1], 10) : 0;
-
-    return hours * 3600 + minutes * 60;
-  }
-
-  /**
-   * Get worklogs for a JIRA issue
-   */
-  async getWorklogs(issueKey: string): Promise<{ worklogs: JiraWorklog[] }> {
-    const url = `${this.auth.baseUrl}/rest/api/3/issue/${issueKey}/worklog`;
-
-    try {
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: this.baseHeaders,
-      });
-
-      if (!response.ok) {
-        const errorData = (await response.json()) as JiraError;
-        throw new Error(
-          `Failed to get worklogs: ${errorData.errorMessages?.join(', ') || response.statusText}`
-        );
-      }
-
-      return (await response.json()) as { worklogs: JiraWorklog[] };
-    } catch (error) {
-      throw new Error(
-        `Error fetching worklogs for ${issueKey}: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-    }
-  }
 
   /**
    * Get the base URL for constructing JIRA issue links
@@ -280,51 +155,7 @@ export class JiraClient {
     return result.issues;
   }
 
-  /**
-   * Get today's worklogs for all authors
-   */
-  async getTodayWorklogs(): Promise<Array<{ issue: JiraIssue; worklog: JiraWorklog }>> {
-    const today = new Date();
-    const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-    const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
 
-    // Format dates for JQL
-    const startDate = startOfDay.toISOString().split('T')[0];
-    const endDate = endOfDay.toISOString().split('T')[0];
-
-    // Search for issues with worklogs created today (any author)
-    const jql = `worklogDate >= "${startDate}" AND worklogDate <= "${endDate}" ORDER BY updated DESC`;
-
-    try {
-      const result = await this.searchIssues(jql, 50);
-      const worklogsWithIssues: Array<{ issue: JiraIssue; worklog: JiraWorklog }> = [];
-
-      for (const issue of result.issues) {
-        const worklogsResponse = await this.getWorklogs(issue.key);
-        const todayWorklogs = worklogsResponse.worklogs.filter((worklog) => {
-          if (!worklog.started) return false;
-
-          const worklogDate = new Date(worklog.started);
-          return worklogDate >= startOfDay && worklogDate <= endOfDay;
-        });
-
-        for (const worklog of todayWorklogs) {
-          worklogsWithIssues.push({ issue, worklog });
-        }
-      }
-
-      // Sort by worklog start time (most recent first)
-      return worklogsWithIssues.sort((a, b) => {
-        const dateA = new Date(a.worklog.started || '');
-        const dateB = new Date(b.worklog.started || '');
-        return dateB.getTime() - dateA.getTime();
-      });
-    } catch (error) {
-      throw new Error(
-        `Error fetching today's worklogs: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-    }
-  }
 
   /**
    * Get current active sprint from the first board
@@ -463,67 +294,7 @@ export class JiraClient {
     return allSprints;
   }
 
-  /**
-   * Search for worklogs by current user within a date range
-   */
-  async searchWorklogsByDateRange(
-    startDate: Date,
-    endDate: Date
-  ): Promise<Array<{ issue: JiraIssue; worklog: JiraWorklog }>> {
-    // Format dates for JQL
-    const startDateStr = startDate.toISOString().split('T')[0];
-    const endDateStr = endDate.toISOString().split('T')[0];
 
-    // Search for issues with worklogs in the date range by current user
-    const jql = `worklogDate >= "${startDateStr}" AND worklogDate <= "${endDateStr}" AND worklogAuthor = currentUser() ORDER BY updated DESC`;
-
-    try {
-      const result = await this.searchIssues(jql, 500); // Higher limit for comprehensive search
-      console.log(`📊 Found ${result.issues.length} issues with worklogs in date range`);
-
-      const worklogsWithIssues: Array<{ issue: JiraIssue; worklog: JiraWorklog }> = [];
-
-      for (const issue of result.issues) {
-        try {
-          const worklogsResponse = await this.getWorklogs(issue.key);
-          const filteredWorklogs = worklogsResponse.worklogs.filter((worklog) => {
-            if (!worklog.started) return false;
-
-            const worklogDate = new Date(worklog.started);
-            return worklogDate >= startDate && worklogDate <= endDate;
-          });
-
-          if (filteredWorklogs.length > 0) {
-            console.log(
-              `📝 ${issue.key}: Found ${filteredWorklogs.length} worklogs in sprint period`
-            );
-          }
-
-          for (const worklog of filteredWorklogs) {
-            worklogsWithIssues.push({ issue, worklog });
-          }
-        } catch (error) {
-          // Skip issues where we can't fetch worklogs
-          console.log(
-            `⚠️  Could not fetch worklogs for ${issue.key}: ${error instanceof Error ? error.message : 'Unknown error'}`
-          );
-        }
-      }
-
-      console.log(`📊 Total worklog entries found: ${worklogsWithIssues.length}`);
-
-      // Sort by worklog start time (most recent first)
-      return worklogsWithIssues.sort((a, b) => {
-        const dateA = new Date(a.worklog.started || '');
-        const dateB = new Date(b.worklog.started || '');
-        return dateB.getTime() - dateA.getTime();
-      });
-    } catch (error) {
-      throw new Error(
-        `Error searching worklogs by date range: ${error instanceof Error ? error.message : 'Unknown error'}`
-      );
-    }
-  }
 }
 
 /**

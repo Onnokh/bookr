@@ -18,4 +18,21 @@ export interface TempoWorklogsResponse {
     offset?: number;
     limit?: number;
   };
+}
+
+export interface TempoWorklogCreateResponse {
+  tempoWorklogId: number;
+  timeSpentSeconds: number;
+  timeSpent: string;
+  description: string;
+  started: string;
+  issue: {
+    id: string;
+    key: string;
+  };
+  author: {
+    accountId: string;
+    name: string;
+    displayName: string;
+  };
 } 

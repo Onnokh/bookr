@@ -4,6 +4,7 @@
  */
 
 import { loadConfigFromFile } from '../utils/config.js';
+import type { TempoWorklogCreateResponse } from '../types/tempo.js';
 
 export class TempoClient {
   private baseUrl: string;
@@ -37,19 +38,61 @@ export class TempoClient {
   /**
    * Add a worklog for a user
    */
-  async addWorklog(_worklogData: any) {
-    // TODO: Implement API call to add a worklog
-    // Endpoint: POST /worklogs
-    throw new Error('Not implemented');
+  async addWorklog(worklogData: {
+    issueId: string;
+    issueKey: string;
+    timeSpentSeconds: number;
+    comment?: string;
+    startDate: string; // yyyy-MM-dd
+    authorAccountId: string;
+  }): Promise<TempoWorklogCreateResponse> {
+    const url = `${this.baseUrl}/worklogs`;
+    const payload = {
+      issueId: worklogData.issueId,
+      issueKey: worklogData.issueKey,
+      timeSpentSeconds: worklogData.timeSpentSeconds,
+      description: worklogData.comment || '',
+      startDate: worklogData.startDate, // must be yyyy-MM-dd
+      authorAccountId: worklogData.authorAccountId,
+    };
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.apiToken}`,
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to add Tempo worklog: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+
+    return (await response.json()) as TempoWorklogCreateResponse;
   }
 
   /**
    * Delete a worklog by ID
    */
-  async deleteWorklog(_worklogId: string) {
-    // TODO: Implement API call to delete a worklog
-    // Endpoint: DELETE /worklogs/{id}
-    throw new Error('Not implemented');
+  async deleteWorklog(worklogId: string) {
+    const url = `${this.baseUrl}/worklogs/${worklogId}`;
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${this.apiToken}`,
+        'Accept': 'application/json',
+      },
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to delete Tempo worklog: ${response.status} ${response.statusText} - ${errorText}`);
+    }
+    
+    return true;
   }
 }
 

@@ -2,16 +2,16 @@ import { Box, Text } from 'ink';
 import type React from 'react';
 import { useEffect, useState } from 'react';
 import { createClient } from '../api/jira-client.js';
+import { createTempoClient } from '../api/tempo-client.js';
 import type { JiraIssue } from '../types/jira.js';
+import type { TempoWorklogCreateResponse } from '../types/tempo.js';
 import { getCurrentBranch, getTicketFromBranch, isGitRepository } from '../utils/git.js';
 import {
-  formatJiraDate,
   formatTimeForDisplay,
   isValidTimeFormat,
   parseTimeToSeconds,
-  secondsToJiraFormat,
 } from '../utils/time-parser.js';
-import { storeWorklog } from '../utils/worklog-storage.js';
+import { storeTempoWorklog } from '../utils/worklog-storage.js';
 import { ConfirmationPrompt } from './ConfirmationPrompt.js';
 
 interface AppProps {
@@ -122,18 +122,27 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
     setAppState('creating');
 
     try {
-      const client = createClient();
+      const jiraClient = createClient();
+      const tempoClient = createTempoClient();
       const timeSpentSeconds = parseTimeToSeconds(timeSpent);
       const comment = flags.description || 'Work logged via Bookr CLI';
+      const user = await jiraClient.getCurrentUser();
 
-      const createdWorklog = await client.addWorklog(jiraIssue.key, {
-        timeSpent: secondsToJiraFormat(timeSpentSeconds),
+      // Format startDate as yyyy-MM-dd in UTC
+      const now = new Date();
+      const yyyyMMdd = now.toISOString().slice(0, 10);
+
+      const createdWorklog: TempoWorklogCreateResponse = await tempoClient.addWorklog({
+        issueId: jiraIssue.id,
+        issueKey: jiraIssue.key,
+        timeSpentSeconds,
         comment,
-        started: formatJiraDate(new Date()),
+        startDate: yyyyMMdd,
+        authorAccountId: user.accountId,
       });
 
       // Store the worklog locally for potential undo
-      storeWorklog(jiraIssue, createdWorklog, comment);
+      storeTempoWorklog(jiraIssue, createdWorklog, comment);
 
       setAppState('success');
     } catch (error) {

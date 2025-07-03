@@ -71,17 +71,23 @@ async function main() {
 
   const { input, flags } = cli;
 
+  // Show usage if no arguments provided
+  if (input.length === 0) {
+    cli.showHelp();
+    return;
+  }
+
   // Handle "today" command
   if (input[0] === 'today') {
-    const command = await import('./commands/today.js');
-    await command.default();
+    const { TodayWorklogs } = await import('./components/TodayWorklogs.js');
+    render(React.createElement(TodayWorklogs));
     return;
   }
 
   // Handle "sprint" command
   if (input[0] === 'sprint') {
-    const command = await import('./commands/sprint.js');
-    await command.default();
+    const { SprintWorklogs } = await import('./components/SprintWorklogs.js');
+    render(React.createElement(SprintWorklogs));
     return;
   }
 
@@ -94,9 +100,17 @@ async function main() {
 
   // Handle "undo" command
   if (input[0] === 'undo') {
-    const command = await import('./commands/undo.js');
     const worklogId = input[1]; // Optional worklog ID
-    await command.default(worklogId);
+    
+    if (worklogId) {
+      // If worklog ID is provided, use the original command for actual deletion
+      const command = await import('./commands/undo.js');
+      await command.default(worklogId);
+    } else {
+      // If no worklog ID, show the interactive selection with deletion capability
+      const { showUndoSelection } = await import('./commands/undo.js');
+      await showUndoSelection();
+    }
     return;
   }
 

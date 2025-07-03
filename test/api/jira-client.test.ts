@@ -114,68 +114,6 @@ describe('JiraClient', () => {
     });
   });
 
-  describe('addWorklog', () => {
-    it('should add worklog successfully', async () => {
-      const mockWorklog: JiraWorklog = {
-        id: 'worklog123',
-        author: { displayName: 'Test User' },
-        timeSpentSeconds: 3600,
-        comment: 'Test work',
-        started: '2024-01-15T10:00:00.000+0000',
-      };
-
-      (fetch as any).mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(mockWorklog),
-      });
-
-      const worklogData = {
-        timeSpent: '1h',
-        comment: 'Test work',
-        started: '2024-01-15T10:00:00.000+0000',
-      };
-
-      const result = await client.addWorklog('PROJ-123', worklogData);
-
-      expect(fetch).toHaveBeenCalledWith(
-        'https://example.atlassian.net/rest/api/3/issue/PROJ-123/worklog',
-        {
-          method: 'POST',
-          headers: {
-            Authorization: 'Basic dGVzdEBleGFtcGxlLmNvbTp0ZXN0LXRva2Vu',
-            Accept: 'application/json',
-            'Content-Type': 'application/json',
-            'User-Agent': 'bookr-cli/1.0',
-          },
-          body: expect.stringContaining('"timeSpentSeconds":3600'),
-        }
-      );
-      expect(result).toEqual(mockWorklog);
-    });
-
-    it('should handle worklog API errors', async () => {
-      const errorResponse = {
-        errorMessages: ['Invalid worklog data'],
-      };
-
-      (fetch as any).mockResolvedValueOnce({
-        ok: false,
-        statusText: 'Bad Request',
-        json: () => Promise.resolve(errorResponse),
-      });
-
-      const worklogData = {
-        timeSpent: '1h',
-        comment: 'Test work',
-        started: '2024-01-15T10:00:00.000+0000',
-      };
-
-      await expect(client.addWorklog('PROJ-123', worklogData)).rejects.toThrow(
-        'Failed to add worklog: Invalid worklog data'
-      );
-    });
-  });
-
   describe('testConnection', () => {
     it('should return true for successful connection', async () => {
       const mockUser: JiraUser = {

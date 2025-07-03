@@ -2,9 +2,11 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import envPaths from 'env-paths';
 import type { JiraIssue, JiraWorklog } from '../types/jira.js';
+import type { TempoWorklog } from '../types/tempo.js';
 
 export interface StoredWorklog {
-  id: string; // Jira worklog ID
+  id: string; // Jira worklog ID or Tempo worklog ID
+  tempoWorklogId?: string; // Tempo worklog ID if different from id
   issueKey: string;
   issueId: string;
   issueSummary: string;
@@ -17,10 +19,12 @@ export interface StoredWorklog {
     name: string;
     displayName: string;
   };
+  source: 'jira' | 'tempo'; // Track the source of the worklog
 }
 
 interface WorklogStorageData {
   worklogs: StoredWorklog[];
+  lastWorklogId: string | undefined; // Track the ID of the most recently created worklog
   lastCleanup: string;
 }
 
@@ -39,7 +43,7 @@ export function readStoredWorklogs(): WorklogStorageData {
   try {
     const storagePath = getWorklogStoragePath();
     if (!existsSync(storagePath)) {
-      return { worklogs: [], lastCleanup: new Date().toISOString() };
+      return { worklogs: [], lastWorklogId: undefined, lastCleanup: new Date().toISOString() };
     }
 
     const content = readFileSync(storagePath, 'utf-8');
@@ -47,12 +51,12 @@ export function readStoredWorklogs(): WorklogStorageData {
 
     // Ensure we have the expected structure
     if (!data.worklogs || !Array.isArray(data.worklogs)) {
-      return { worklogs: [], lastCleanup: new Date().toISOString() };
+      return { worklogs: [], lastWorklogId: undefined, lastCleanup: new Date().toISOString() };
     }
 
     return data;
   } catch {
-    return { worklogs: [], lastCleanup: new Date().toISOString() };
+    return { worklogs: [], lastWorklogId: undefined, lastCleanup: new Date().toISOString() };
   }
 }
 
@@ -101,10 +105,65 @@ export function storeWorklog(
       started: worklog.started || new Date().toISOString(),
       createdAt: new Date().toISOString(),
       author: worklog.author,
+      source: 'jira',
     };
 
     // Add to the beginning of the array (most recent first)
     data.worklogs.unshift(storedWorklog);
+    
+    // Track this as the last worklog
+    data.lastWorklogId = worklog.id;
+
+    // Keep only the last 100 worklogs to prevent unlimited growth
+    if (data.worklogs.length > 100) {
+      data.worklogs = data.worklogs.slice(0, 100);
+    }
+
+    writeStoredWorklogs(data);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Store a Tempo worklog after creation
+ */
+export function storeTempoWorklog(
+  issue: JiraIssue,
+  tempoWorklog: TempoWorklog,
+  originalComment?: string
+): boolean {
+  try {
+    if (!tempoWorklog.tempoWorklogId) {
+      return false;
+    }
+
+    const data = readStoredWorklogs();
+
+    const storedWorklog: StoredWorklog = {
+      id: String(tempoWorklog.tempoWorklogId),
+      tempoWorklogId: String(tempoWorklog.tempoWorklogId),
+      issueKey: issue.key,
+      issueId: issue.id,
+      issueSummary: issue.fields.summary,
+      timeSpent: tempoWorklog.timeSpent || '',
+      timeSpentSeconds: tempoWorklog.timeSpentSeconds || 0,
+      ...(originalComment && { comment: originalComment }),
+      started: tempoWorklog.started || new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      author: {
+        name: 'Unknown',
+        displayName: 'Unknown',
+      },
+      source: 'tempo',
+    };
+
+    // Add to the beginning of the array (most recent first)
+    data.worklogs.unshift(storedWorklog);
+    
+    // Track this as the last worklog
+    data.lastWorklogId = String(tempoWorklog.tempoWorklogId);
 
     // Keep only the last 100 worklogs to prevent unlimited growth
     if (data.worklogs.length > 100) {
@@ -127,6 +186,18 @@ export function getStoredWorklogById(worklogId: string): StoredWorklog | null {
 }
 
 /**
+ * Get the last worklog that was created
+ */
+export function getLastWorklog(): StoredWorklog | null {
+  const data = readStoredWorklogs();
+  if (!data.lastWorklogId) {
+    return null;
+  }
+  
+  return data.worklogs.find((w) => w.id === data.lastWorklogId) || null;
+}
+
+/**
  * Remove worklog from storage after deletion
  */
 export function removeStoredWorklog(worklogId: string): boolean {
@@ -134,6 +205,11 @@ export function removeStoredWorklog(worklogId: string): boolean {
     const data = readStoredWorklogs();
     const originalLength = data.worklogs.length;
     data.worklogs = data.worklogs.filter((w) => w.id !== worklogId);
+
+    // If we're removing the last worklog, clear the lastWorklogId
+    if (data.lastWorklogId === worklogId) {
+      data.lastWorklogId = undefined;
+    }
 
     if (data.worklogs.length < originalLength) {
       writeStoredWorklogs(data);
