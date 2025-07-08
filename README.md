@@ -1,5 +1,10 @@
 # 🧪 Bookr - Tempo CLI Tool
 
+[![npm version](https://badge.fury.io/js/bookr-cli.svg)](https://badge.fury.io/js/bookr-cli)
+[![npm downloads](https://img.shields.io/npm/dm/bookr-cli.svg)](https://www.npmjs.com/package/bookr-cli)
+[![Node.js version](https://img.shields.io/node/v/bookr-cli.svg)](https://nodejs.org/)
+[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
+
 A terminal-based CLI tool to book time in Jira using the Tempo plugin by parsing your current Git branch name.
 
 ## 🎯 Features
@@ -78,6 +83,9 @@ bookr today
 # View sprint overview
 bookr sprint
 
+# View sprint progress
+bookr progress
+
 # Check for updates
 bookr update
 
@@ -87,36 +95,6 @@ bookr --help
 # Show version
 bookr --version
 ```
-
-## 🔧 Architecture
-
-### Update Notifications
-
-The CLI automatically checks for updates once per day and displays a notification if a newer version is available. You can also manually check for updates using:
-
-```bash
-bookr update
-```
-
-Update information is cached to avoid excessive API calls to the npm registry.
-
-### Technology Stack
-
-- **Runtime**: Node.js 18+ with ES modules
-- **UI Framework**: Ink (React for CLIs)
-- **Language**: TypeScript with strict configuration
-- **HTTP Client**: better-fetch for API calls
-- **CLI Framework**: meow for argument parsing
-- **Code Quality**: Biome for linting and formatting
-- **Development**: tsx for fast TypeScript execution
-
-### Key Design Decisions
-
-1. **ES Modules**: Using modern ES modules for better tree-shaking and compatibility
-2. **Strict TypeScript**: Enabling all strict checks for better code quality
-3. **Ink UI**: React-based CLI interface for rich user experience
-4. **Positional Arguments**: User-friendly syntax for time logging
-5. **Modular Structure**: Clear separation of concerns with dedicated directories
 
 ## 🤝 Contributing
 
@@ -129,9 +107,3 @@ Update information is cached to avoid excessive API calls to the npm registry.
 ## 📝 License
 
 ISC License - see `package.json` for details.
-
-## 🔗 Related Links
-
-- [Ink Documentation](https://github.com/vadimdemedes/ink)
-- [Biome Documentation](https://biomejs.dev/)
-- [Tempo API Documentation](https://tempo.io/api-docs/)

@@ -32,7 +32,30 @@ export class TempoClient {
       const errorText = await response.text();
       throw new Error(`Failed to fetch Tempo worklogs: ${response.status} ${response.statusText} - ${errorText}`);
     }
-    return await response.json();
+    let data: any = await response.json();
+    // Map worklogs to add 'started' field
+    if (Array.isArray(data.results)) {
+      data.results = data.results.map((worklog: any) => {
+        let started: string | undefined = undefined;
+        if (worklog.startDate) {
+          // If startTime is present, combine, else use 00:00:00
+          const time = worklog.startTime ? worklog.startTime : '00:00:00';
+          started = `${worklog.startDate}T${time}`;
+        }
+        return { ...worklog, started };
+      });
+    } else if (Array.isArray(data)) {
+      // Defensive: if API returns array directly
+      data = data.map((worklog: any) => {
+        let started: string | undefined = undefined;
+        if (worklog.startDate) {
+          const time = worklog.startTime ? worklog.startTime : '00:00:00';
+          started = `${worklog.startDate}T${time}`;
+        }
+        return { ...worklog, started };
+      });
+    }
+    return data;
   }
 
   /**

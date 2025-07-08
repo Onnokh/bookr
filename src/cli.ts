@@ -19,6 +19,7 @@ async function main() {
       $ bookr [time] [options]
       $ bookr today
       $ bookr sprint
+      $ bookr progress
       $ bookr undo [worklog_id]
       $ bookr init
       $ bookr update
@@ -28,6 +29,7 @@ async function main() {
       time       Time to log (e.g., "2h 30m", "1h15m", "45m")
       today      Show today's worklogs and total hours with IDs
       sprint     Show worklogs for the last 14 days (sprint period)
+      progress   Show sprint progress percentages for each day
       undo       Delete recent worklogs (interactive) or specific worklog by ID
       init       Set up JIRA and Tempo credentials
       update     Check for available updates
@@ -46,6 +48,7 @@ async function main() {
       $ bookr --date "2024-01-15" 4h         # With specific date
       $ bookr today
       $ bookr sprint
+      $ bookr progress                        # Show sprint progress
       $ bookr undo                            # Show recent worklogs to undo
       $ bookr undo 12345                      # Undo specific worklog by ID
       $ bookr update                          # Check for updates
@@ -88,6 +91,13 @@ async function main() {
   if (input[0] === 'sprint') {
     const { SprintWorklogs } = await import('./components/SprintWorklogs.js');
     render(React.createElement(SprintWorklogs));
+    return;
+  }
+
+  // Handle "progress" command
+  if (input[0] === 'progress') {
+    const command = await import('./commands/progress.js');
+    await command.default();
     return;
   }
 
