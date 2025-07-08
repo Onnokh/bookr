@@ -12,6 +12,7 @@ import {
   parseTimeToSeconds,
 } from '../utils/time-parser.js';
 import { storeTempoWorklog } from '../utils/worklog-storage.js';
+import { roundToNearest15Minutes } from '../utils/date.js';
 import { ConfirmationPrompt } from './ConfirmationPrompt.js';
 
 interface AppProps {
@@ -128,15 +129,16 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
       const comment = flags.description || 'Work logged via Bookr CLI';
       const user = await jiraClient.getCurrentUser();
 
-      // Calculate start time: current time minus time spent
+      // Calculate start time: current time minus time spent, rounded to nearest 15 minutes
       const now = new Date();
       const startTime = new Date(now.getTime() - (timeSpentSeconds * 1000));
+      const roundedStartTime = roundToNearest15Minutes(startTime);
       
       // Format startDate as yyyy-MM-dd in UTC
-      const yyyyMMdd = startTime.toISOString().slice(0, 10);
+      const yyyyMMdd = roundedStartTime.toISOString().slice(0, 10);
       
       // Format startTime as HH:mm:ss
-      const startTimeFormatted = startTime.toTimeString().slice(0, 8);
+      const startTimeFormatted = roundedStartTime.toTimeString().slice(0, 8);
 
       const createdWorklog: TempoWorklogCreateResponse = await tempoClient.addWorklog({
         issueId: jiraIssue.id,
@@ -249,11 +251,12 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
     const client = createClient();
     const issueUrl = `${client.getBaseUrl()}/browse/${jiraIssue.key}`;
 
-    // Calculate and format the start time for display
+    // Calculate and format the start time for display (rounded to nearest 15 minutes)
     const timeSpentSeconds = parseTimeToSeconds(timeSpent);
     const now = new Date();
     const startTime = new Date(now.getTime() - (timeSpentSeconds * 1000));
-    const startTimeFormatted = startTime.toLocaleTimeString();
+    const roundedStartTime = roundToNearest15Minutes(startTime);
+    const startTimeFormatted = roundedStartTime.toLocaleTimeString();
 
     return (
       <Box flexDirection="column" padding={1}>

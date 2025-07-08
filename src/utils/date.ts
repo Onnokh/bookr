@@ -17,3 +17,20 @@ export function getYesterdayISO(): string {
   d.setDate(d.getDate() - 1);
   return d.toISOString().slice(0, 10);
 }
+
+/**
+ * Round a date down to the previous 15-minute mark
+ */
+export function roundToNearest15Minutes(date: Date): Date {
+  const rounded = new Date(date);
+  const minutes = rounded.getMinutes();
+  const roundedMinutes = Math.floor(minutes / 15) * 15;
+  
+  // Reset seconds and milliseconds
+  rounded.setSeconds(0, 0);
+  
+  // Set to previous 15-minute mark
+  rounded.setMinutes(roundedMinutes);
+  
+  return rounded;
+}
