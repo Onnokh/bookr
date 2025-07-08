@@ -128,9 +128,15 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
       const comment = flags.description || 'Work logged via Bookr CLI';
       const user = await jiraClient.getCurrentUser();
 
-      // Format startDate as yyyy-MM-dd in UTC
+      // Calculate start time: current time minus time spent
       const now = new Date();
-      const yyyyMMdd = now.toISOString().slice(0, 10);
+      const startTime = new Date(now.getTime() - (timeSpentSeconds * 1000));
+      
+      // Format startDate as yyyy-MM-dd in UTC
+      const yyyyMMdd = startTime.toISOString().slice(0, 10);
+      
+      // Format startTime as HH:mm:ss
+      const startTimeFormatted = startTime.toTimeString().slice(0, 8);
 
       const createdWorklog: TempoWorklogCreateResponse = await tempoClient.addWorklog({
         issueId: jiraIssue.id,
@@ -138,6 +144,7 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
         timeSpentSeconds,
         comment,
         startDate: yyyyMMdd,
+        startTime: startTimeFormatted,
         authorAccountId: user.accountId,
       });
 
@@ -242,6 +249,12 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
     const client = createClient();
     const issueUrl = `${client.getBaseUrl()}/browse/${jiraIssue.key}`;
 
+    // Calculate and format the start time for display
+    const timeSpentSeconds = parseTimeToSeconds(timeSpent);
+    const now = new Date();
+    const startTime = new Date(now.getTime() - (timeSpentSeconds * 1000));
+    const startTimeFormatted = startTime.toLocaleTimeString();
+
     return (
       <Box flexDirection="column" padding={1}>
         <Text color="green" bold>
@@ -253,6 +266,9 @@ export const App: React.FC<AppProps> = ({ input: _input, flags }) => {
           </Text>
           <Text>
             <Text color="yellow">Time:</Text> {formatTimeForDisplay(timeSpent)} ({timeSpent})
+          </Text>
+          <Text>
+            <Text color="yellow">Start Time:</Text> {startTimeFormatted}
           </Text>
           {flags.description && (
             <Text>

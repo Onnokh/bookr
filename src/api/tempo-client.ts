@@ -45,6 +45,7 @@ export class TempoClient {
     comment?: string;
     startDate: string; // yyyy-MM-dd
     authorAccountId: string;
+    startTime?: string; // HH:mm:ss format for start time
   }): Promise<TempoWorklogCreateResponse> {
     const url = `${this.baseUrl}/worklogs`;
     const payload = {
@@ -54,6 +55,7 @@ export class TempoClient {
       description: worklogData.comment || '',
       startDate: worklogData.startDate, // must be yyyy-MM-dd
       authorAccountId: worklogData.authorAccountId,
+      ...(worklogData.startTime && { startTime: worklogData.startTime }),
     };
 
     const response = await fetch(url, {
