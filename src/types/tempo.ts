@@ -35,4 +35,24 @@ export interface TempoWorklogCreateResponse {
     name: string;
     displayName: string;
   };
+}
+
+export interface TempoWorkloadDay {
+  day: string;
+  requiredSeconds: number;
+}
+
+export interface TempoWorkloadScheme {
+  days: TempoWorkloadDay[];
+  defaultScheme: boolean;
+  description: string;
+  id: number;
+  memberCount: number;
+  name: string;
+  self: string;
+}
+
+export interface TempoUserWorkload {
+  accountId: string;
+  workloadScheme: TempoWorkloadScheme;
 } 

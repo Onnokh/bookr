@@ -3,6 +3,8 @@ import { secondsToJiraFormat } from '../utils/time-parser.js';
 import { createTempoClient } from '../api/tempo-client.js';
 import { parallelMapLimit } from '../utils/concurrency.js';
 import type { TempoWorklog, TempoWorklogsResponse } from '../types/tempo.js';
+import { getRequiredHoursForDate } from '../utils/workload.js';
+import type { TempoWorkloadScheme } from '../types/tempo.js';
 
 export async function showTodayWorklogs() {
   try {
@@ -10,6 +12,32 @@ export async function showTodayWorklogs() {
     const tempoClient = createTempoClient();
     const user = await client.getCurrentUser();
     const todayISO = new Date().toISOString().slice(0, 10);
+    
+    // Get user workload scheme
+    let workloadScheme: TempoWorkloadScheme;
+    try {
+      const userWorkload = await tempoClient.getUserWorkload(user.accountId);
+      workloadScheme = userWorkload.workloadScheme;
+    } catch {
+      console.log('⚠️  Could not fetch user workload scheme, using default 8 hours per day.');
+      // Fallback to default 8 hours per day for weekdays
+      workloadScheme = {
+        days: [
+          { day: 'MONDAY', requiredSeconds: 8 * 3600 },
+          { day: 'TUESDAY', requiredSeconds: 8 * 3600 },
+          { day: 'WEDNESDAY', requiredSeconds: 8 * 3600 },
+          { day: 'THURSDAY', requiredSeconds: 8 * 3600 },
+          { day: 'FRIDAY', requiredSeconds: 8 * 3600 },
+        ],
+        defaultScheme: true,
+        description: 'Default 8-hour workday',
+        id: 0,
+        memberCount: 1,
+        name: 'Default Workload',
+        self: '',
+      };
+    }
+    
     const tempoWorklogsResponse = await tempoClient.getWorklogsForUser(user.accountId, todayISO, todayISO);
     const tempoWorklogs = (tempoWorklogsResponse && typeof tempoWorklogsResponse === 'object' && Array.isArray((tempoWorklogsResponse as TempoWorklogsResponse).results))
       ? (tempoWorklogsResponse as TempoWorklogsResponse).results
@@ -55,9 +83,16 @@ export async function showTodayWorklogs() {
     console.log('─'.repeat(140));
     const totalTime = secondsToJiraFormat(totalSeconds);
     const totalHours = (totalSeconds / 3600).toFixed(2);
+    
+    // Calculate today's required hours
+    const today = new Date();
+    const requiredHours = getRequiredHoursForDate(workloadScheme, today);
+    const progressPercentage = requiredHours > 0 ? ((totalSeconds / 3600) / requiredHours) * 100 : 0;
+    
     console.log(`📊 Total time today: ${totalTime} (${totalHours} hours)`);
     console.log(`📝 Worklog entries: ${tempoWorklogs.length}`);
     console.log(`🎯 Issues worked on: ${uniqueIssues.size}`);
+    console.log(`📈 Progress: ${progressPercentage.toFixed(1)}% of ${requiredHours.toFixed(1)}h required (${workloadScheme.name})`);
   } catch (error) {
     console.error('❌ Error:', error instanceof Error ? error.message : error);
   }

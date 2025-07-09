@@ -3,29 +3,12 @@ import { createClient } from '../api/jira-client.js';
 import { createTempoClient } from '../api/tempo-client.js';
 import type { TempoWorklog, TempoWorklogsResponse } from '../types/tempo.js';
 import { ProgressTable } from '../components/ProgressTable.js';
-
-// Assuming 8 hours per day as standard workday
-const HOURS_PER_DAY = 8;
-
-function getDayName(date: Date): string {
-  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  return days[date.getDay()] || 'Unknown';
-}
-
-function getWorkingDaysInRange(startDate: Date, endDate: Date): Date[] {
-  const workingDays: Date[] = [];
-  const current = new Date(startDate);
-  
-  while (current <= endDate) {
-    // Skip weekends (Saturday = 6, Sunday = 0)
-    if (current.getDay() !== 0 && current.getDay() !== 6) {
-      workingDays.push(new Date(current));
-    }
-    current.setDate(current.getDate() + 1);
-  }
-  
-  return workingDays;
-}
+import { 
+  getWorkingDaysInRange, 
+  calculateDailyProgress, 
+  getRequiredHoursUpToDate
+} from '../utils/workload.js';
+import type { TempoWorkloadScheme } from '../types/tempo.js';
 
 function groupWorklogsByDate(worklogs: TempoWorklog[]): Map<string, number> {
   const grouped = new Map<string, number>();
@@ -67,6 +50,35 @@ export async function showSprintProgress(): Promise<void> {
     // Get current user
     const user = await client.getCurrentUser();
     
+    // Get user workload scheme
+    let workloadScheme: TempoWorkloadScheme | undefined;
+    try {
+      const userWorkload = await tempoClient.getUserWorkload(user.accountId);
+      if (userWorkload?.workloadScheme?.days && Array.isArray(userWorkload.workloadScheme.days)) {
+        workloadScheme = userWorkload.workloadScheme;
+      } else {
+        throw new Error('Invalid workload scheme response');
+      }
+    } catch {
+      console.log('⚠️  Could not fetch user workload scheme, using default 8 hours per day.');
+      // Fallback to default 8 hours per day for weekdays
+      workloadScheme = {
+        days: [
+          { day: 'MONDAY', requiredSeconds: 8 * 3600 },
+          { day: 'TUESDAY', requiredSeconds: 8 * 3600 },
+          { day: 'WEDNESDAY', requiredSeconds: 8 * 3600 },
+          { day: 'THURSDAY', requiredSeconds: 8 * 3600 },
+          { day: 'FRIDAY', requiredSeconds: 8 * 3600 },
+        ],
+        defaultScheme: true,
+        description: 'Default 8-hour workday',
+        id: 0,
+        memberCount: 1,
+        name: 'Default Workload',
+        self: '',
+      };
+    }
+    
     // Get worklogs for sprint period
     const tempoWorklogsResponse = await tempoClient.getWorklogsForUser(user.accountId, fromISO, toISO);
     const tempoWorklogs = (tempoWorklogsResponse && typeof tempoWorklogsResponse === 'object' && Array.isArray((tempoWorklogsResponse as TempoWorklogsResponse).results))
@@ -76,28 +88,12 @@ export async function showSprintProgress(): Promise<void> {
     // Group worklogs by date
     const worklogsByDate = groupWorklogsByDate(tempoWorklogs);
     
-    // Get working days in sprint
+    // Get working days in sprint based on workload scheme
     const workingDays = getWorkingDaysInRange(startDate, endDate);
     
-    // Calculate daily progress
-    const dailyProgress = workingDays.map(day => {
-      const dateISO = day.toLocaleDateString('en-CA'); // Use local date
-      const hoursLogged = worklogsByDate.get(dateISO) || 0;
-      const hoursPlanned = HOURS_PER_DAY;
-      const percentage = (hoursLogged / hoursPlanned) * 100;
-      return {
-        dayName: getDayName(day),
-        date: dateISO,
-        hoursLogged,
-        percentage
-      };
-    });
+    // Calculate daily progress with workload awareness
+    const dailyProgress = calculateDailyProgress(worklogsByDate, workingDays, workloadScheme);
     
-    // Calculate total progress
-    const totalHoursLogged = dailyProgress.reduce((sum, day) => sum + day.hoursLogged, 0);
-    const totalHoursPlanned = dailyProgress.length * HOURS_PER_DAY;
-    const totalPercentage = (totalHoursLogged / totalHoursPlanned) * 100;
-
     // Render the progress table
     render(
       <Box flexDirection="column" padding={1}>
@@ -107,13 +103,43 @@ export async function showSprintProgress(): Promise<void> {
         <Text color="gray">
           📅 {fromISO} to {toISO}
         </Text>
+        <Text color="blue">
+          📊 Workload: {workloadScheme?.name}
+        </Text>
         <ProgressTable
           rows={dailyProgress}
           title="📊 Sprint Progress"
-          totalHours={totalHoursLogged}
-          totalPercentage={totalPercentage}
-          sprintName={sprint.name}
+          showWorkload={true}
         />
+        <Text color="gray">──────────────────────────────────────────────────</Text>
+        {(() => {
+          const today = new Date();
+          const effectiveEndDate = today <= endDate ? today : endDate;
+          // Up to now
+          const upToNowRequired = getRequiredHoursUpToDate(workloadScheme, startDate, effectiveEndDate);
+          const upToNowLogged = dailyProgress
+            .filter(row => new Date(row.date) <= effectiveEndDate)
+            .reduce((sum, row) => sum + row.hoursLogged, 0);
+          const upToNowPerc = upToNowRequired > 0 ? (upToNowLogged / upToNowRequired) * 100 : 0;
+          let upToNowColor: 'green' | 'yellow' | 'red' = 'red';
+          if (upToNowPerc >= 100) upToNowColor = 'green';
+          else if (upToNowPerc >= 75) upToNowColor = 'yellow';
+          // Whole sprint
+          const totalRequired = getRequiredHoursUpToDate(workloadScheme, startDate, endDate);
+          const totalLogged = dailyProgress.reduce((sum, row) => sum + row.hoursLogged, 0);
+          const totalPerc = totalRequired > 0 ? (totalLogged / totalRequired) * 100 : 0;
+          let totalColor: 'green' | 'yellow' | 'red' = 'red';
+          if (totalPerc >= 100) totalColor = 'green';
+          else if (totalPerc >= 75) totalColor = 'yellow';
+          return (
+            <Text>
+              <Text color="lightGray">Progress: </Text>
+              <Text color={upToNowColor}>{upToNowLogged}h/{upToNowRequired}h ({upToNowPerc.toFixed(1)}%)</Text>
+              <Text color="lightGray"> | Sprint: </Text>
+              <Text color={totalColor}>{totalLogged}h/{totalRequired}h ({totalPerc.toFixed(1)}%)</Text>
+            </Text>
+          );
+        })()}
       </Box>
     );
   } catch (error) {
